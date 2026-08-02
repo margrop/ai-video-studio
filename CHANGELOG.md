@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — 2026-08-02
+
+- add the native MiniMax H3 asynchronous video Provider;
+- map H3 `content[]` requests, task polling, terminal failures and signed CDN
+  downloads;
+- support optional public reference-image URLs for Character/Asset inputs;
+- separate the NewAPI-backed text Planner from the MiniMax H3 video model;
+- add synthetic H3 provider tests without real credentials.
+
 ## 0.17.0 — 2026-08-02
 
 - add allowlisted remote Article → Video source URLs;

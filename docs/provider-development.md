@@ -21,15 +21,25 @@ The provider class should expose `provider_id`, optional `provider_kind` and
 workflow calls this method once per validated Story Plan shot, with a 4–15
 second duration and the server-owned character reference images. Set
 `AIVS_VIDEO_PROVIDER` to that server-owned ID to activate it. The repository
-also contains transport-compatible scaffolds for `minimax-video`, `kling`,
-`google-veo`, `runway` and `openai-video`; they use vendor-prefixed
-`*_VIDEO_*` environment variables but do not claim that the vendor API shape
-has been verified. Enable one only after its endpoint, credential, quota and
-response contract has been tested.
+contains a verified native MiniMax H3 adapter under `providers/minimax`, plus
+transport-compatible scaffolds for `kling`, `google-veo`, `runway` and
+`openai-video`. The remaining scaffolds use vendor-prefixed `*_VIDEO_*`
+environment variables but do not claim that their vendor API shapes have been
+verified. Enable one only after its endpoint, credential, quota and response
+contract has been tested.
 
-## MiniMax H3
+## MiniMax H3 text and video boundaries
 
-`providers/minimax/MiniMaxH3Provider` treats H3 as a server-side OpenAI-compatible planner model. It returns structured JSON which is validated by `StoryPlan`. The base URL is configurable so a local OpenAI Gateway can sit between AIVS and MiniMax.
+`MiniMaxLLMProvider` is the OpenAI-compatible text planner boundary. It uses
+the text model selected by `AIVS_LLM_MODEL`, normally through a local NewAPI
+or another OpenAI-compatible gateway. H3 is not used as the planner model.
+
+`MiniMaxH3VideoProvider` is the native video boundary. It maps a validated Shot
+to MiniMax H3's `content[]` request, submits `/v2/video_generation`, polls
+`/v2/query/video_generation/{task_id}`, validates the returned CDN URL and
+downloads the MP4. It supports 4–15 second text-to-video and reference-image
+Shots. Reference images must be available through public or signed URLs; the
+provider does not upload local files to an external service implicitly.
 
 ## Video providers
 

@@ -24,8 +24,16 @@ class RecordingVideoProvider:
     def __init__(self) -> None:
         self.calls: list[tuple[str, int, Path]] = []
 
-    async def generate(self, *, prompt, duration_seconds, output_path, reference_images=()):
-        _ = reference_images
+    async def generate(
+        self,
+        *,
+        prompt,
+        duration_seconds,
+        output_path,
+        reference_images=(),
+        reference_image_urls=(),
+    ):
+        _ = reference_images, reference_image_urls
         self.calls.append((prompt, duration_seconds, output_path))
         output_path.write_bytes(b"shot-mp4")
         return output_path

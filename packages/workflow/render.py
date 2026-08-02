@@ -182,6 +182,7 @@ class RenderWorkflow:
         *,
         character_prompt: str = "",
         reference_images: tuple[Path, ...] = (),
+        reference_image_urls: tuple[str, ...] = (),
         prompt_config: Mapping[str, str] | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> RenderResult:
@@ -274,12 +275,15 @@ class RenderWorkflow:
                     message=f"正在生成 Shot {index + 1}/{total_shots}",
                 )
                 try:
-                    await self.video_provider.generate(
-                        prompt=shot.prompt,
-                        duration_seconds=round(shot.duration_seconds),
-                        output_path=shot_path,
-                        reference_images=reference_images,
-                    )
+                    provider_kwargs: dict[str, object] = {
+                        "prompt": shot.prompt,
+                        "duration_seconds": round(shot.duration_seconds),
+                        "output_path": shot_path,
+                        "reference_images": reference_images,
+                    }
+                    if reference_image_urls:
+                        provider_kwargs["reference_image_urls"] = reference_image_urls
+                    await self.video_provider.generate(**provider_kwargs)  # type: ignore[arg-type]
                 except Exception as exc:  # noqa: BLE001 - persist safe manifest state before retry.
                     error_code = str(getattr(exc, "code", "shot_generation_failed"))[:300]
                     _update_manifest_shot(

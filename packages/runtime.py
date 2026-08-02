@@ -20,7 +20,7 @@ from packages.publishing import PublisherRegistry
 from packages.tts import SilentTTSProvider
 from packages.workflow import RenderWorkflow
 from providers.kling import KlingVideoProvider
-from providers.minimax import MiniMaxH3Provider, MiniMaxTTSProvider, MiniMaxVideoProvider
+from providers.minimax import MiniMaxLLMProvider, MiniMaxTTSProvider, MiniMaxVideoProvider
 from providers.openai import OpenAIVideoProvider
 from providers.runway import RunwayVideoProvider
 from providers.veo import GoogleVeoVideoProvider
@@ -63,7 +63,7 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
 
     llm_provider = None
     if os.getenv("AIVS_LLM_API_KEY"):
-        llm_provider = MiniMaxH3Provider.from_env()
+        llm_provider = MiniMaxLLMProvider.from_env()
         registry.register(
             llm_provider,
             kind="llm",
