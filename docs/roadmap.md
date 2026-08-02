@@ -36,8 +36,10 @@
   included; verified vendor-specific request adapters, template versioning and
   brand presets remain extension work
 - provider capability discovery and usage/cost records are included
+- server-owned stage and per-shot progress metadata is persisted consistently
+  by file, Redis and PostgreSQL queues
 
-## Phase 4 — in progress
+## Phase 4 — foundation completed
 
 - MCP Server
 - Claude Code, Codex and Kimi Code tools
@@ -46,3 +48,7 @@
 - human review and approval gates before any registered external publisher
 - real platform adapters remain opt-in integrations with their own credentials,
   rate limits and platform-specific tests
+
+The remaining work is integration-specific extension work: verified vendor
+request/response adapters, template and brand-preset versioning, and separately
+tested social-platform publishers.
