@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.0 — 2026-08-02
+
+- add provider-neutral `JobProgress` metadata for planning, narration, shot
+  generation, composition and social-draft stages;
+- persist progress consistently in filesystem, Redis and PostgreSQL job stores;
+- emit structured progress events for each completed video shot;
+- show live percentage and shot progress in the Dashboard.
+
 ## 0.13.0 — 2026-08-02
 
 - add capability-aware server-side ProviderRegistry selection;
