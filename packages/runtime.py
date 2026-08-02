@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
+from packages.library import AssetCatalog, CharacterCatalog, TemplateCatalog
 from packages.planner import StoryPlanner
 from packages.providers import ProviderRegistry
 from packages.tts import SilentTTSProvider
@@ -30,10 +32,17 @@ class _OfflineVideoProvider:
 class AppRuntime:
     workflow: RenderWorkflow
     providers: ProviderRegistry
+    assets: AssetCatalog
+    characters: CharacterCatalog
+    templates: TemplateCatalog
 
 
-def build_runtime() -> AppRuntime:
+def build_runtime(library_root: Path | None = None) -> AppRuntime:
     registry = ProviderRegistry()
+    base_library_root = library_root or Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")) / "library"
+    assets = AssetCatalog(base_library_root / "assets")
+    characters = CharacterCatalog(base_library_root / "characters", assets)
+    templates = TemplateCatalog(Path(__file__).parents[1] / "templates")
 
     llm_provider = None
     if os.getenv("AIVS_LLM_API_KEY"):
@@ -74,7 +83,13 @@ def build_runtime() -> AppRuntime:
         planner=StoryPlanner(provider=llm_provider),
         tts_provider=tts_provider,
     )
-    return AppRuntime(workflow=workflow, providers=registry)
+    return AppRuntime(
+        workflow=workflow,
+        providers=registry,
+        assets=assets,
+        characters=characters,
+        templates=templates,
+    )
 
 
 def build_default_workflow() -> RenderWorkflow:

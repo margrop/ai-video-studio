@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 
@@ -11,6 +12,14 @@ class PromptBuilder:
     character_prompt: str = ""
     lighting_prompt: str = "soft natural light, high legibility, controlled contrast"
     negative_prompt: str = "blurry, distorted text, extra limbs, watermark, logo artifacts"
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, str]) -> PromptBuilder:
+        return cls(
+            base_prompt=config.get("base", cls.base_prompt),
+            lighting_prompt=config.get("lighting", cls.lighting_prompt),
+            negative_prompt=config.get("negative", cls.negative_prompt),
+        )
 
     def build(self, *, visual: str, camera: str = "medium shot", character: str = "") -> str:
         parts = [

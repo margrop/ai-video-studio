@@ -71,6 +71,8 @@ class StoryPlanner:
         duration_seconds: int,
         language: str,
         voice: str,
+        character_prompt: str = "",
+        prompt_builder: PromptBuilder | None = None,
         warning: str | None = None,
     ) -> StoryPlan:
         title, source = _clean_source(topic, source_markdown)
@@ -78,6 +80,7 @@ class StoryPlanner:
         pieces = _chunks(body, 5) or [body]
         shot_count = len(pieces)
         base_duration = duration_seconds / shot_count
+        builder = prompt_builder or self.prompt_builder
         shots: list[Shot] = []
         for index, piece in enumerate(pieces):
             start = round(index * base_duration, 3)
@@ -100,7 +103,11 @@ class StoryPlanner:
                     narration=piece,
                     visual=visual,
                     camera="slow push-in" if index else "static medium shot",
-                    prompt=self.prompt_builder.build(visual=visual, camera="slow push-in"),
+                    prompt=builder.build(
+                        visual=visual,
+                        camera="slow push-in",
+                        character=character_prompt,
+                    ),
                 )
             )
         warnings = [warning] if warning else []
@@ -124,6 +131,8 @@ class StoryPlanner:
         language: str = "zh-CN",
         voice: str = "neutral",
         use_ai: bool = True,
+        character_prompt: str = "",
+        prompt_builder: PromptBuilder | None = None,
     ) -> PlanResult:
         if not use_ai or self.provider is None:
             return PlanResult(
@@ -133,6 +142,8 @@ class StoryPlanner:
                     duration_seconds=duration_seconds,
                     language=language,
                     voice=voice,
+                    character_prompt=character_prompt,
+                    prompt_builder=prompt_builder,
                 ),
                 mode="deterministic",
             )
@@ -151,6 +162,7 @@ class StoryPlanner:
                 "source": source,
                 "language": language,
                 "voice": voice,
+                "character_prompt": character_prompt,
                 "target_duration_seconds": duration_seconds,
                 "output_schema": schema,
             },
@@ -175,6 +187,8 @@ class StoryPlanner:
                     duration_seconds=duration_seconds,
                     language=language,
                     voice=voice,
+                    character_prompt=character_prompt,
+                    prompt_builder=prompt_builder,
                     warning=warning,
                 ),
                 mode="deterministic-fallback",

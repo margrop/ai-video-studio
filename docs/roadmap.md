@@ -19,13 +19,13 @@
 - Web dashboard, usage/cost records, Redis/Postgres backend and compose stack
   remain the next Phase 2 slices
 
-## Phase 3
+## Phase 3 — in progress
 
-- Character Library and Asset Library
+- Character Library, Asset Library and template catalog foundation
+- reference asset IDs and character Prompt Builder integration
 - image/video hosted providers
-- reference image management
-- template versioning and brand presets
-- provider capability discovery
+- asset upload lifecycle, template versioning and brand presets
+- provider capability discovery and usage/cost records
 
 ## Phase 4
 

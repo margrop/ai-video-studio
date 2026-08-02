@@ -23,6 +23,7 @@ Markdown / Topic
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
+- `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
@@ -116,6 +117,7 @@ packages/
 ├── llm/       # provider-neutral LLM 接口
 ├── planner/   # AI/确定性 Story Planner
 ├── storyboard/# Prompt Builder
+├── library/   # Character、Asset、Template catalog
 ├── providers/ # VideoProvider 与 Registry
 ├── subtitle/  # SRT
 ├── tts/       # TTS 接口与实现

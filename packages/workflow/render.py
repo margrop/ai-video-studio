@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from packages.contracts.models import CreateJobRequest, StoryPlan
 from packages.ffmpeg import FFmpegRenderer
 from packages.planner import StoryPlanner
+from packages.storyboard import PromptBuilder
 from packages.subtitle import write_srt
 from packages.tts import SilentTTSProvider, TTSProvider
 
@@ -35,8 +37,16 @@ class RenderWorkflow:
         self.tts_provider = tts_provider or SilentTTSProvider()
         self.renderer = renderer or FFmpegRenderer()
 
-    async def run(self, request: CreateJobRequest, output_dir: Path) -> RenderResult:
+    async def run(
+        self,
+        request: CreateJobRequest,
+        output_dir: Path,
+        *,
+        character_prompt: str = "",
+        prompt_config: Mapping[str, str] | None = None,
+    ) -> RenderResult:
         output_dir.mkdir(parents=True, exist_ok=True)
+        prompt_builder = PromptBuilder.from_config(prompt_config) if prompt_config else None
         result = await self.planner.plan(
             topic=request.topic,
             source_markdown=request.source_markdown,
@@ -44,6 +54,8 @@ class RenderWorkflow:
             language=request.language,
             voice=request.voice,
             use_ai=request.use_ai,
+            character_prompt=character_prompt,
+            prompt_builder=prompt_builder,
         )
         plan_path = output_dir / "story-plan.json"
         plan_path.write_text(result.plan.model_dump_json(indent=2), encoding="utf-8")

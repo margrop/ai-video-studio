@@ -41,6 +41,13 @@ worker leases are recovered after a process crash.
 - `GET /v1/jobs/{job_id}/events` returns safe state-transition events;
 - `GET /v1/stats` returns queue depth and status counts;
 - `GET /v1/providers` returns configured capability metadata without secrets.
+- `GET /v1/templates` lists server-owned workflow templates;
+- `GET/POST /v1/assets` manages reusable asset metadata;
+- `GET/POST /v1/characters` manages reusable character profiles and reference IDs.
+
+`POST /v1/jobs` accepts `template_id` and an optional `character_id`. Both are
+resolved against server-owned catalogs; a client cannot submit an arbitrary
+Prompt Builder configuration or filesystem path.
 
 ## Download artifacts
 
