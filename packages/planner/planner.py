@@ -77,15 +77,37 @@ class StoryPlanner:
         warning: str | None = None,
     ) -> StoryPlan:
         title, source = _clean_source(topic, source_markdown)
-        body = source or f"今天用一分钟介绍：{title}。"
+        english = language.lower().startswith("en")
+        body = source or (
+            f"A concise one-minute introduction to {title}."
+            if english
+            else f"今天用一分钟介绍：{title}。"
+        )
         shot_count = max(1, min(12, math.ceil(duration_seconds / 8)))
         pieces = _chunks(body, shot_count)
         if not pieces:
             pieces = [body]
         while len(pieces) < shot_count:
-            pieces.append(f"继续展示：{title}")
+            pieces.append(f"Continue with {title}." if english else f"继续展示：{title}")
         base_duration = duration_seconds / shot_count
         builder = prompt_builder or self.prompt_builder
+        visuals = (
+            [
+                "Title card with concise topic keywords and a modern technical style",
+                "Infographic showing one core concept and its key relationship",
+                "Step-by-step process with clear arrows and hierarchy",
+                "Practical application scene showing concrete user value",
+                "Summary card with one clear next action",
+            ]
+            if english
+            else [
+                "标题卡与主题关键词，简洁现代的科技内容视觉",
+                "信息图式展示核心概念，突出一个关键关系",
+                "流程分解画面，使用清晰的箭头与层级",
+                "应用场景画面，展示用户能得到的实际价值",
+                "总结卡片，留下一个明确的行动建议",
+            ]
+        )
         shots: list[Shot] = []
         for index, piece in enumerate(pieces):
             start = round(index * base_duration, 3)
@@ -93,13 +115,7 @@ class StoryPlanner:
                 base_duration if index < shot_count - 1 else duration_seconds - start,
                 3,
             )
-            visual = [
-                "标题卡与主题关键词，简洁现代的科技内容视觉",
-                "信息图式展示核心概念，突出一个关键关系",
-                "流程分解画面，使用清晰的箭头与层级",
-                "应用场景画面，展示用户能得到的实际价值",
-                "总结卡片，留下一个明确的行动建议",
-            ][index % 5]
+            visual = visuals[index % len(visuals)]
             shots.append(
                 Shot(
                     id=f"shot-{index + 1:02d}",
