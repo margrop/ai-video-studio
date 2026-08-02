@@ -9,6 +9,7 @@ from pathlib import Path
 import typer
 
 from packages.library import CatalogNotFound
+from packages.providers import VideoProviderError
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import FileJobStore
 
@@ -46,15 +47,27 @@ async def process_once(store: FileJobStore, runtime: AppRuntime | None = None) -
             error_code="invalid_job_reference",
             error_message=str(exc),
             retryable=False,
+            provider_id="pipeline",
+        )
+    except VideoProviderError as exc:
+        store.fail(
+            record,
+            error_code=exc.code,
+            error_message=str(exc),
+            retryable=exc.retryable,
+            provider_id=app_runtime.video_provider.provider_id
+            if app_runtime.video_provider is not None
+            else "pipeline",
         )
     except Exception as exc:  # noqa: BLE001 - worker must convert failures to job state.
         store.fail(
             record,
             error_code="render_failed",
             error_message=f"{type(exc).__name__}: {str(exc)[:400]}",
+            provider_id=getattr(app_runtime.workflow.tts_provider, "provider_id", "pipeline"),
         )
     else:
-        store.finish(record)
+        store.finish(record, provider_id=result.video_provider_id or result.mode)
     return True
 
 

@@ -40,6 +40,7 @@ worker leases are recovered after a process crash.
 - `GET /v1/jobs?status=queued&limit=50` lists recent jobs;
 - `GET /v1/jobs/{job_id}/events` returns safe state-transition events;
 - `GET /v1/stats` returns queue depth and status counts;
+- `GET /v1/usage` returns idempotent terminal usage totals and provider counts;
 - `GET /v1/providers` returns configured capability metadata without secrets.
 - `GET /v1/templates` lists server-owned workflow templates;
 - `GET/POST /v1/assets` manages reusable asset metadata;
@@ -48,6 +49,11 @@ worker leases are recovered after a process crash.
 `POST /v1/jobs` accepts `template_id` and an optional `character_id`. Both are
 resolved against server-owned catalogs; a client cannot submit an arbitrary
 Prompt Builder configuration or filesystem path.
+
+When `AIVS_VIDEO_PROVIDER`, `AIVS_VIDEO_BASE_URL`, `AIVS_VIDEO_API_KEY` and
+`AIVS_VIDEO_MODEL` are configured, the worker can use the generic asynchronous
+video adapter. Otherwise it uses the deterministic FFmpeg renderer. The
+download host must be explicitly allowed by `AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS`.
 
 ## Download artifacts
 

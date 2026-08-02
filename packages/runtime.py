@@ -15,6 +15,7 @@ from pathlib import Path
 from packages.library import AssetCatalog, CharacterCatalog, TemplateCatalog
 from packages.planner import StoryPlanner
 from packages.providers import ProviderRegistry
+from packages.providers.http_video import HTTPVideoProvider
 from packages.tts import SilentTTSProvider
 from packages.workflow import RenderWorkflow
 from providers.minimax import MiniMaxH3Provider, MiniMaxTTSProvider
@@ -32,6 +33,7 @@ class _OfflineVideoProvider:
 class AppRuntime:
     workflow: RenderWorkflow
     providers: ProviderRegistry
+    video_provider: HTTPVideoProvider | None
     assets: AssetCatalog
     characters: CharacterCatalog
     templates: TemplateCatalog
@@ -73,19 +75,33 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
             capabilities=("speech-synthesis",),
         )
 
-    registry.register(
-        _OfflineVideoProvider(),
-        kind="video",
-        capabilities=("slideshow", "ffmpeg"),
-    )
+    video_provider = None
+    configured_video_id = os.getenv("AIVS_VIDEO_PROVIDER", "").strip()
+    if configured_video_id and all(
+        os.getenv(key) for key in ("AIVS_VIDEO_BASE_URL", "AIVS_VIDEO_API_KEY", "AIVS_VIDEO_MODEL")
+    ):
+        video_provider = HTTPVideoProvider.from_env(provider_id=configured_video_id)
+        registry.register(
+            video_provider,
+            kind="video",
+            capabilities=("async-generation", "remote-download"),
+        )
+    else:
+        registry.register(
+            _OfflineVideoProvider(),
+            kind="video",
+            capabilities=("slideshow", "ffmpeg"),
+        )
 
     workflow = RenderWorkflow(
         planner=StoryPlanner(provider=llm_provider),
         tts_provider=tts_provider,
+        video_provider=video_provider,
     )
     return AppRuntime(
         workflow=workflow,
         providers=registry,
+        video_provider=video_provider,
         assets=assets,
         characters=characters,
         templates=templates,

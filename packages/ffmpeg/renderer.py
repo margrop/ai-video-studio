@@ -153,3 +153,58 @@ class FFmpegRenderer:
             output_path=output_path,
             audio_path=audio_path,
         )
+
+    def mux_audio(
+        self,
+        *,
+        video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        duration_seconds: int,
+    ) -> Path:
+        """Attach deterministic narration to a provider-generated video."""
+
+        self._require_ffmpeg()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        self._run(
+            [
+                self.ffmpeg_binary,
+                "-y",
+                "-i",
+                str(video_path),
+                "-i",
+                str(audio_path),
+                "-filter_complex",
+                "[1:a]apad[audio]",
+                "-map",
+                "0:v:0",
+                "-map",
+                "[audio]",
+                "-t",
+                str(duration_seconds),
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-movflags",
+                "+faststart",
+                str(output_path),
+            ]
+        )
+        return output_path
+
+    async def mux_audio_async(
+        self,
+        *,
+        video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        duration_seconds: int,
+    ) -> Path:
+        return await asyncio.to_thread(
+            self.mux_audio,
+            video_path=video_path,
+            audio_path=audio_path,
+            output_path=output_path,
+            duration_seconds=duration_seconds,
+        )

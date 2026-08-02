@@ -31,6 +31,10 @@ function renderMetrics(stats) {
   $("metric-depth").textContent = stats.queue_depth;
 }
 
+function renderUsage(usage) {
+  $("metric-duration").textContent = `${Math.round(usage.total_duration_seconds / 60)}m`;
+}
+
 function renderProviders(providers) {
   $("providers").innerHTML = providers.map((provider) => `
     <div class="provider-row">
@@ -69,12 +73,14 @@ async function openDetail(jobId) {
 async function refresh() {
   try {
     const filter = $("status-filter").value;
-    const [stats, jobs, providers] = await Promise.all([
+    const [stats, usage, jobs, providers] = await Promise.all([
       api("/v1/stats"),
+      api("/v1/usage"),
       api(`/v1/jobs?limit=100${filter ? `&status=${encodeURIComponent(filter)}` : ""}`),
       api("/v1/providers"),
     ]);
     renderMetrics(stats);
+    renderUsage(usage);
     state.jobs = jobs;
     renderJobs();
     renderProviders(providers.providers);

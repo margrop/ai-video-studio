@@ -17,6 +17,7 @@ from pathlib import Path
 from uuid import UUID
 
 from packages.contracts.models import CreateJobRequest, JobEvent, JobRecord
+from packages.storage.usage import UsageLedger
 
 _SECRET_RE = re.compile(
     r"(?i)\b(authorization|api[_-]?key|token|password|secret)\b\s*[:=]\s*[^\s,;]+"
@@ -65,6 +66,7 @@ class FileJobStore:
             self.idempotency_dir,
         ):
             directory.mkdir(parents=True, exist_ok=True)
+        self.usage = UsageLedger(root / "usage")
 
     @classmethod
     def from_env(cls, root: Path | None = None) -> FileJobStore:
@@ -310,7 +312,7 @@ class FileJobStore:
             return record
         return None
 
-    def finish(self, record: JobRecord) -> JobRecord:
+    def finish(self, record: JobRecord, *, provider_id: str = "offline-renderer") -> JobRecord:
         """Persist a terminal success and remove its processing marker."""
 
         record.lease_expires_at = None
@@ -319,6 +321,12 @@ class FileJobStore:
         self._remove_processing(record.job_id)
         if record.status == "succeeded":
             self._append_event(record, "succeeded", "render completed")
+            self.usage.record(
+                job_id=record.job_id,
+                provider_id=provider_id,
+                status="succeeded",
+                duration_seconds=record.request.duration_seconds,
+            )
         return record
 
     def fail(
@@ -328,6 +336,7 @@ class FileJobStore:
         error_code: str,
         error_message: str,
         retryable: bool = True,
+        provider_id: str = "pipeline",
     ) -> JobRecord:
         """Record a failure and schedule a bounded retry when allowed."""
 
@@ -353,6 +362,12 @@ class FileJobStore:
         self.save(record)
         self._remove_processing(record.job_id)
         self._append_event(record, "failed", record.error_message or record.error_code)
+        self.usage.record(
+            job_id=record.job_id,
+            provider_id=provider_id,
+            status="failed",
+            duration_seconds=record.request.duration_seconds,
+        )
         return record
 
     def list_jobs(self, *, status: str | None = None, limit: int = 50) -> list[JobRecord]:

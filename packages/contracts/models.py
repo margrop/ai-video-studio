@@ -171,6 +171,25 @@ class ProviderListResponse(StrictModel):
     providers: list[ProviderStatus] = Field(default_factory=list, max_length=100)
 
 
+class UsageRecord(StrictModel):
+    usage_id: UUID = Field(default_factory=uuid4)
+    job_id: UUID
+    stage: Literal["pipeline"] = "pipeline"
+    provider_id: str = Field(min_length=1, max_length=100)
+    status: Literal["succeeded", "failed"]
+    units: float = Field(default=1, ge=0)
+    duration_seconds: int = Field(default=0, ge=0, le=3600)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class UsageSummary(StrictModel):
+    total_jobs: int = Field(default=0, ge=0)
+    successful_jobs: int = Field(default=0, ge=0)
+    failed_jobs: int = Field(default=0, ge=0)
+    total_duration_seconds: int = Field(default=0, ge=0)
+    by_provider: dict[str, int] = Field(default_factory=dict)
+
+
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
