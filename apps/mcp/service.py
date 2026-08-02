@@ -56,6 +56,7 @@ class AIVSToolService:
             "subtitles.srt",
             "narration.wav",
             "social-drafts.json",
+            "shot-manifest.json",
         )
         return {name: str(directory / name) for name in names if (directory / name).is_file()}
 
