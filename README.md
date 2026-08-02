@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.9.0：
+当前版本是 0.10.0：
 
 ```text
 Markdown / Topic
@@ -22,12 +22,15 @@ Markdown / Topic
 - FastAPI 接受任务，文件队列 worker 处理任务；
 - 可通过 `AIVS_STORAGE_BACKEND=redis` 切换到 Redis 多进程队列，默认仍是离线文件队列；
 - 可通过 `AIVS_STORAGE_BACKEND=postgres` 切换到 PostgreSQL 元数据队列，使用行锁安全支持多 Worker；
+- PostgreSQL 模式也可以共享 Asset/Character 元数据、审批历史和发布审计；
 - 可通过 `AIVS_ARTIFACT_BACKEND=s3` 把生成产物上传到 AWS S3、MinIO 或其他 S3-compatible 存储，API 会继续通过受保护的下载接口提供产物；
 - 配置 `AIVS_API_KEY` 后，所有 `/v1` API 使用服务端 API Key 鉴权并启用限流；
 - Dashboard 可对社交草稿逐平台留下通过/驳回记录，系统不会绕过人工审批自动发布；
+- 发布接口默认 dry-run；即使人工批准，没有显式注册的 Publisher 或服务端发布开关未开启，也只返回 `unavailable`，不会伪造发布成功；
 - GitHub Actions 可手动把仓库 Markdown 文章打包为视频、字幕、计划和社交草稿 artifact；
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
+- `/v1/publishers`、发布审计和 MCP 发布预览可让 Agent 自动化保持可检查；
 - `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
 - `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
@@ -135,6 +138,7 @@ packages/
 ├── tts/       # TTS 接口与实现
 ├── ffmpeg/    # 确定性视频合成
 ├── storage/   # 文件/Redis/PostgreSQL 任务状态与 S3/MinIO 产物存储
+├── publishing/# 草稿、审批、dry-run、Publisher 与审计边界
 └── workflow/  # 内容流水线编排
 providers/
 ├── minimax/   # MiniMax H3 / TTS 适配器
@@ -171,8 +175,8 @@ pytest
 ## 路线图
 
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
-- Phase 2：可恢复本地任务队列、Redis/PostgreSQL 多进程队列、幂等、重试、事件、Provider 能力、运维 API、Dashboard 和 S3/MinIO 产物后端已完成；Asset/Character/Approval 目录的数据库化仍待接入。
-- Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本和通用异步视频传输已完成；接下来是各供应商的专用适配器与多镜头素材。
-- Phase 4（当前）：可选 MCP Server、社交草稿和 Docker/CI 基线；真实平台发布仍需独立适配器与人工审批。
+- Phase 2：可恢复本地任务队列、Redis/PostgreSQL 多进程队列、幂等、重试、事件、Provider 能力、运维 API、Dashboard、S3/MinIO 产物后端和 PostgreSQL 元数据目录已完成。
+- Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本、通用异步视频传输和 MCP Agent 工具已完成；接下来是各供应商的专用适配器与多镜头素材。
+- Phase 4（当前）：Article → Video → Voice → Social、dry-run、审计和人工审批边界已完成；真实平台发布仍需独立、按平台验证的 Publisher 适配器。
 
 本项目使用 MIT License，详见 [`LICENSE`](LICENSE)。
