@@ -269,19 +269,10 @@ class PostgresJobStore:
 
     @classmethod
     def from_env(cls, root: Path | None = None) -> PostgresJobStore:
-        try:
-            import psycopg
-        except ImportError as exc:  # pragma: no cover - exercised in deployment
-            raise RuntimeError(
-                "Postgres backend requires the optional dependency: pip install '.[postgres]'"
-            ) from exc
-
-        dsn = os.getenv("AIVS_POSTGRES_DSN", "").strip()
-        if not dsn:
-            raise RuntimeError("AIVS_POSTGRES_DSN must be configured for the Postgres backend")
+        connect = postgres_connect_from_env()
         storage_root = root or Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs"))
         store = cls(
-            lambda: psycopg.connect(dsn),
+            connect,
             storage_root,
             max_attempts=_env_int("AIVS_JOB_MAX_ATTEMPTS", 3, 1, 100),
             lease_seconds=_env_int("AIVS_JOB_LEASE_SECONDS", 300, 5, 86_400),
@@ -291,7 +282,7 @@ class PostgresJobStore:
         return store
 
     def _session(self) -> Any:
-        return _PostgresSession(self._connect)
+        return PostgresSession(self._connect)
 
     def ensure_schema(self) -> None:
         with self._session() as (_connection, cursor):
@@ -683,7 +674,31 @@ def _env_float(name: str, default: float, minimum: float, maximum: float) -> flo
     return value if minimum <= value <= maximum else default
 
 
-class _PostgresSession:
+def postgres_connect_from_env() -> Callable[[], Any]:
+    """Build a server-side PostgreSQL connection factory from ``AIVS_POSTGRES_DSN``."""
+
+    try:
+        import psycopg
+    except ImportError as exc:  # pragma: no cover - exercised in deployment
+        raise RuntimeError(
+            "Postgres backend requires the optional dependency: pip install '.[postgres]'"
+        ) from exc
+
+    dsn = os.getenv("AIVS_POSTGRES_DSN", "").strip()
+    if not dsn:
+        raise RuntimeError("AIVS_POSTGRES_DSN must be configured for the Postgres backend")
+    return lambda: psycopg.connect(dsn)
+
+
+class PostgresSession:
+    """Short-lived psycopg session used by metadata repositories.
+
+    Keeping the connection lifecycle in one small helper lets the queue,
+    catalogs and approval/audit repositories share the same safe pattern:
+    synchronous service calls open a connection, commit or roll back one
+    operation, then close it before returning to the request loop.
+    """
+
     def __init__(self, connect: Callable[[], Any]) -> None:
         self._connect = connect
         self.connection: Any = None

@@ -42,11 +42,14 @@ worker leases are recovered after a process crash.
 - `GET /v1/stats` returns queue depth and status counts;
 - `GET /v1/usage` returns idempotent terminal usage totals and provider counts;
 - `GET /v1/providers` returns configured capability metadata without secrets.
+- `GET /v1/publishers` returns explicitly registered publishing adapters.
 - `GET /v1/templates` lists server-owned workflow templates;
 - `GET/POST /v1/assets` manages reusable asset metadata;
 - `GET/POST /v1/characters` manages reusable character profiles and reference IDs.
 - `GET /v1/jobs/{job_id}/social-drafts` returns the validated draft bundle;
 - `GET/POST /v1/jobs/{job_id}/approvals` reads or appends a human approval decision for one platform.
+- `GET /v1/jobs/{job_id}/publish-audit` returns safe publish audit events;
+- `POST /v1/jobs/{job_id}/publish` previews by default and requires the latest human approval for an external attempt.
 
 `POST /v1/jobs` accepts `template_id` and an optional `character_id`. Both are
 resolved against server-owned catalogs; a client cannot submit an arbitrary
@@ -65,9 +68,11 @@ download host must be explicitly allowed by `AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS`.
 - `GET /v1/jobs/{job_id}/artifacts/narration.wav`
 - `GET /v1/jobs/{job_id}/artifacts/social-drafts.json`
 
-Approval decisions are append-only and auditable. They do not publish content;
-an external platform connector must be a separate, explicitly invoked
-workflow and must check the latest decision first.
+Approval decisions and publish attempts are append-only and auditable. The
+publish endpoint defaults to dry-run, and a non-dry-run request is blocked
+unless the latest platform decision is `approved`. With no server-side adapter
+registered—or while `AIVS_EXTERNAL_PUBLISH_ENABLED` is false—the structured
+result is `unavailable`; no credentials or external request are fabricated.
 
 ## Web dashboard
 

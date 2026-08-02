@@ -23,7 +23,7 @@
 - manual Article → Video GitHub Actions workflow with artifact packaging
 - S3/MinIO-compatible generated artifact storage with authenticated API streaming
 - PostgreSQL job metadata, leases, events, idempotency and usage storage
-- Postgres catalog/approval metadata remains follow-up
+- PostgreSQL asset/character metadata, approval history and publish audit storage
 
 ## Phase 3 — foundation completed
 
@@ -31,8 +31,9 @@
 - reference asset IDs and character Prompt Builder integration
 - generic async video provider transport with safe polling/download boundary
 - RSS/Atom → video → social-draft workflow
-- vendor-specific image/video adapters
-- asset upload lifecycle, template versioning and brand presets remain follow-up
+- generic provider registry and safe async video transport
+- vendor-specific image/video adapters, asset upload lifecycle, template
+  versioning and brand presets remain extension work
 - provider capability discovery and usage/cost records are included
 
 ## Phase 4 — in progress
@@ -40,5 +41,7 @@
 - MCP Server
 - Claude Code, Codex and Kimi Code tools
 - Article-to-video GitHub Action
-- blog/WeChat/Bilibili/Xiaohongshu publishing workflows
-- human review and approval gates before external publishing
+- blog/WeChat/Bilibili/Xiaohongshu publishing boundary with dry-run and audit
+- human review and approval gates before any registered external publisher
+- real platform adapters remain opt-in integrations with their own credentials,
+  rate limits and platform-specific tests

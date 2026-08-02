@@ -9,13 +9,14 @@ never credentials or raw provider responses.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from packages.library import AssetCatalog, CharacterCatalog, TemplateCatalog
+from packages.library import AssetCatalog, CharacterCatalog, TemplateCatalog, build_catalogs
 from packages.planner import StoryPlanner
 from packages.providers import ProviderRegistry, VideoProvider
 from packages.providers.http_video import HTTPVideoProvider
+from packages.publishing import PublisherRegistry
 from packages.tts import SilentTTSProvider
 from packages.workflow import RenderWorkflow
 from providers.minimax import MiniMaxH3Provider, MiniMaxTTSProvider
@@ -37,14 +38,14 @@ class AppRuntime:
     assets: AssetCatalog
     characters: CharacterCatalog
     templates: TemplateCatalog
+    publishers: PublisherRegistry = field(default_factory=PublisherRegistry)
 
 
 def build_runtime(library_root: Path | None = None) -> AppRuntime:
     registry = ProviderRegistry()
     registry.load_entry_points()
     base_library_root = library_root or Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")) / "library"
-    assets = AssetCatalog(base_library_root / "assets")
-    characters = CharacterCatalog(base_library_root / "characters", assets)
+    assets, characters = build_catalogs(base_library_root)
     templates = TemplateCatalog(Path(__file__).parents[1] / "templates")
 
     llm_provider = None
@@ -110,6 +111,7 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
         assets=assets,
         characters=characters,
         templates=templates,
+        publishers=PublisherRegistry(),
     )
 
 

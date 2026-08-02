@@ -22,6 +22,11 @@ from packages.contracts.models import (
     JobStatsResponse,
     ProviderListResponse,
     ProviderStatus,
+    PublishAuditRecord,
+    PublisherListResponse,
+    PublisherStatus,
+    PublishSocialDraftRequest,
+    PublishSocialDraftResponse,
     SocialApprovalRecord,
     SocialApprovalRequest,
     SocialDraftBundle,
@@ -29,7 +34,14 @@ from packages.contracts.models import (
     UsageSummary,
 )
 from packages.library import CatalogNotFound
-from packages.publishing import ApprovalStore
+from packages.publishing import (
+    ApprovalStore,
+    AuditStore,
+    PublishingService,
+    build_approval_store,
+    build_audit_store,
+    external_publishing_enabled,
+)
 from packages.runtime import AppRuntime, build_runtime
 from packages.security import APIAuthenticator, build_rate_limiter, security_headers
 from packages.storage import (
@@ -49,12 +61,21 @@ def create_app(
     store: JobStore | None = None,
     runtime: AppRuntime | None = None,
     artifact_store: ArtifactStore | None = None,
+    approval_store: ApprovalStore | None = None,
+    audit_store: AuditStore | None = None,
 ) -> FastAPI:
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
     generated_artifacts = artifact_store or build_artifact_store(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.9.0")
-    approval_store = ApprovalStore(job_store.root / "approvals")
+    app = FastAPI(title="AI Video Studio API", version="0.10.0")
+    approval_store = approval_store or build_approval_store(job_store.root / "approvals")
+    audit_store = audit_store or build_audit_store(job_store.root / "publish-audit")
+    publishing_service = PublishingService(
+        approvals=approval_store,
+        audit=audit_store,
+        publishers=app_runtime.publishers,
+        enabled=external_publishing_enabled(),
+    )
     authenticator = APIAuthenticator.from_env()
     rate_limiter = build_rate_limiter(job_store)
 
@@ -168,6 +189,19 @@ def create_app(
             ]
         )
 
+    @app.get("/v1/publishers", response_model=PublisherListResponse)
+    async def get_publishers() -> PublisherListResponse:
+        return PublisherListResponse(
+            publishers=[
+                PublisherStatus(
+                    publisher_id=descriptor.publisher_id,
+                    platform=descriptor.platform,
+                    configured=descriptor.configured,
+                )
+                for descriptor in app_runtime.publishers.descriptors()
+            ]
+        )
+
     @app.get("/v1/templates", response_model=list[TemplateSummary])
     async def get_templates() -> list[TemplateSummary]:
         return app_runtime.templates.list()
@@ -248,6 +282,33 @@ def create_app(
             raise HTTPException(status_code=422, detail="platform_not_in_social_drafts")
         return approval_store.decide(job_id, request)
 
+    @app.get("/v1/jobs/{job_id}/publish-audit", response_model=list[PublishAuditRecord])
+    async def get_publish_audit(job_id: UUID) -> list[PublishAuditRecord]:
+        if job_store.get(job_id) is None:
+            raise HTTPException(status_code=404, detail="job_not_found")
+        return audit_store.list(job_id)
+
+    @app.post(
+        "/v1/jobs/{job_id}/publish",
+        response_model=PublishSocialDraftResponse,
+    )
+    async def publish_social_draft(
+        job_id: UUID,
+        request: PublishSocialDraftRequest,
+    ) -> PublishSocialDraftResponse:
+        bundle = _social_drafts(job_id)
+        draft = next((item for item in bundle.drafts if item.platform == request.platform), None)
+        if draft is None:
+            raise HTTPException(status_code=422, detail="platform_not_in_social_drafts")
+        video_path = generated_artifacts.local_path(job_id, "video.mp4")
+        return await publishing_service.publish(
+            job_id=job_id,
+            draft=draft,
+            actor=request.actor,
+            dry_run=request.dry_run,
+            video_path=video_path,
+        )
+
     @app.get("/v1/jobs/{job_id}/artifacts/{artifact_name}")
     async def get_artifact(job_id: UUID, artifact_name: str) -> Response:
         record = job_store.get(job_id)
@@ -295,6 +356,8 @@ def create_app(
     app.state.artifact_store = generated_artifacts
     app.state.runtime = app_runtime
     app.state.approvals = approval_store
+    app.state.audit = audit_store
+    app.state.publishing = publishing_service
     app.state.workflow_factory = lambda: app_runtime.workflow
     return app
 

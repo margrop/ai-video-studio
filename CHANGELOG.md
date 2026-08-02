@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0 — 2026-08-02
+
+- add PostgreSQL-backed Asset/Character catalogs and approval metadata;
+- add append-only publish audit storage and a provider-neutral Publisher registry;
+- add dry-run-by-default publishing with human approval gates, safe outcomes and API/MCP controls;
+- add Dashboard preview/publish controls that never bypass the approval boundary.
+
 ## 0.9.0 — 2026-08-02
 
 - add an optional PostgreSQL JobStore with row-level `SKIP LOCKED` claims;

@@ -60,17 +60,22 @@ aivs-worker
 
 PostgreSQL is metadata storage, not media storage. Keep
 `AIVS_ARTIFACT_BACKEND=s3` for separate API/worker hosts, or use the default
-filesystem artifact backend with a shared volume. Asset/Character catalogs and
-approval records remain below `AIVS_STORAGE_ROOT` until their database adapter
-is implemented.
+filesystem artifact backend with a shared volume. When
+`AIVS_CATALOG_BACKEND`, `AIVS_APPROVAL_BACKEND` and `AIVS_AUDIT_BACKEND` are
+empty, they follow `AIVS_STORAGE_BACKEND`; therefore PostgreSQL mode also
+shares Asset/Character metadata, approval history and publish audit events.
+Set any of those variables to `filesystem` to keep that particular record type
+on the service volume.
 
 ## Files and multi-host deployments
 
 Redis and PostgreSQL store job metadata, queue state, events and usage records.
-Asset and
-Character catalogs, approval records and the worker's temporary staging files
-remain below `AIVS_STORAGE_ROOT`. Generated MP4/SRT/audio/plan files can use the
-artifact backend described below.
+The PostgreSQL backend stores asset/character metadata, approval decisions and
+publish audit events in separate `aivs_assets`, `aivs_characters`,
+`aivs_social_approvals` and `aivs_publish_audit` tables. Binary catalog files
+and worker temporary staging files remain below `AIVS_STORAGE_ROOT` unless a
+future catalog file adapter is configured. Generated MP4/SRT/audio/plan files
+can use the artifact backend described below.
 
 ## Artifact backends
 
@@ -111,9 +116,8 @@ job request, artifact name, URL or repository file.
 S3 publication is intentionally upload-only from the worker boundary. The
 current release does not delete remote objects automatically; apply a bucket
 lifecycle/retention policy appropriate for article bodies, narration and
-generated media. Catalog and approval metadata are still local, so separate
-hosts require a shared volume for those records until the Postgres catalog
-slice is implemented.
+generated media. External social publishing is a separate, approval-gated
+boundary and is dry-run by default.
 
 The filesystem backend remains the default so `aivs generate`, offline tests
 and a single-host installation require no Redis service.
