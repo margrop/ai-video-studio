@@ -22,6 +22,10 @@ def test_file_job_store_transitions_queued_to_running(tmp_path) -> None:
         "running",
         "succeeded",
     ]
+    usage = store.usage.summary()
+    assert usage.total_jobs == 1
+    assert usage.successful_jobs == 1
+    assert usage.total_duration_seconds == created.request.duration_seconds
 
 
 def test_idempotency_key_returns_the_original_job_without_a_duplicate(tmp_path) -> None:

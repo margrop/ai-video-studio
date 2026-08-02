@@ -22,6 +22,7 @@ Markdown / Topic
 - FastAPI 接受任务，文件队列 worker 处理任务；
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
+- `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
 - `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
@@ -101,8 +102,8 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
   -d '{"topic":"介绍 MCP","duration_seconds":60,"use_ai":false}'
 ```
 
-运维接口：`GET /v1/jobs`、`GET /v1/stats`、`GET /v1/providers` 和
-`GET /v1/jobs/{job_id}/events`。
+运维接口：`GET /v1/jobs`、`GET /v1/stats`、`GET /v1/usage`、
+`GET /v1/providers` 和 `GET /v1/jobs/{job_id}/events`。
 
 ## 项目结构
 
@@ -159,8 +160,8 @@ pytest
 ## 路线图
 
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
-- Phase 2（当前）：可恢复本地任务队列、幂等、重试、事件、Provider 能力和运维 API；接下来是 Dashboard、Redis/Postgres 和用量账本。
-- Phase 3：Character Library、Asset Library、真正的视频 Provider、多镜头素材。
+- Phase 2：可恢复本地任务队列、幂等、重试、事件、Provider 能力、运维 API 和 Dashboard 已完成；Redis/Postgres 仍待接入。
+- Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本和通用异步视频传输已完成；接下来是各供应商的专用适配器与多镜头素材。
 - Phase 4：MCP Server、博客/公众号/知乎/B 站等发布 Workflow。
 
 本项目使用 MIT License，详见 [`LICENSE`](LICENSE)。

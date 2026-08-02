@@ -23,6 +23,7 @@ from packages.contracts.models import (
     ProviderListResponse,
     ProviderStatus,
     TemplateSummary,
+    UsageSummary,
 )
 from packages.library import CatalogNotFound
 from packages.runtime import AppRuntime, build_runtime
@@ -105,6 +106,10 @@ def create_app(
     @app.get("/v1/stats", response_model=JobStatsResponse)
     async def get_stats() -> JobStatsResponse:
         return JobStatsResponse(**job_store.stats())
+
+    @app.get("/v1/usage", response_model=UsageSummary)
+    async def get_usage() -> UsageSummary:
+        return job_store.usage.summary()
 
     @app.get("/v1/providers", response_model=ProviderListResponse)
     async def get_providers() -> ProviderListResponse:

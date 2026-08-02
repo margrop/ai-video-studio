@@ -25,6 +25,15 @@ class VideoProvider(Protocol):
         """Generate a video artifact from a provider-owned prompt."""
 
 
+class VideoProviderError(RuntimeError):
+    """Safe provider failure with a retry decision owned by the adapter."""
+
+    def __init__(self, code: str, message: str, *, retryable: bool = True) -> None:
+        super().__init__(message)
+        self.code = code
+        self.retryable = retryable
+
+
 @dataclass(frozen=True)
 class ProviderDescriptor:
     """Safe provider metadata exposed to operators, never credentials."""

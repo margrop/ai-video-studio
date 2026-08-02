@@ -23,7 +23,8 @@
 
 - Character Library, Asset Library and template catalog foundation
 - reference asset IDs and character Prompt Builder integration
-- image/video hosted providers
+- generic async video provider transport with safe polling/download boundary
+- vendor-specific image/video adapters
 - asset upload lifecycle, template versioning and brand presets
 - provider capability discovery and usage/cost records
 
