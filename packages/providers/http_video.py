@@ -161,6 +161,7 @@ class HTTPVideoProvider:
         duration_seconds: int,
         output_path: Path,
         reference_images: tuple[Path, ...] = (),
+        reference_image_urls: tuple[str, ...] = (),
     ) -> Path:
         if not self.base_url or not self.api_key or not self.model:
             raise VideoProviderError(
@@ -168,7 +169,7 @@ class HTTPVideoProvider:
                 "video provider is not fully configured",
                 retryable=False,
             )
-        _ = reference_images
+        _ = reference_images, reference_image_urls
         headers = {"Authorization": f"Bearer {self.api_key}"}
         payload = {
             "model": self.model,
