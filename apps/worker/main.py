@@ -41,7 +41,10 @@ async def process_once(
                 for asset_id in character.reference_asset_ids
                 if (path := app_runtime.assets.local_path(asset_id)) is not None
             ]
-        prompt_config = app_runtime.templates.prompt_config(record.request.template_id)
+        prompt_config = app_runtime.templates.prompt_config(
+            record.request.template_id,
+            record.request.brand_preset_id,
+        )
 
         def report_progress(
             stage: str,
