@@ -63,6 +63,7 @@ def generate(
     brand_preset_id: str | None = typer.Option(
         None, "--brand-preset", help="Server-owned Brand Preset."
     ),
+    source_url: str | None = typer.Option(None, "--source-url", help="Allowlisted article URL."),
 ) -> None:
     """Generate a vertical MP4 from a topic or Markdown article."""
 
@@ -70,6 +71,7 @@ def generate(
         request = CreateJobRequest(
             topic=topic,
             source_markdown=_read_source(source),
+            source_url=source_url,
             duration_seconds=duration,
             use_ai=not no_ai,
             brand_preset_id=brand_preset_id,
