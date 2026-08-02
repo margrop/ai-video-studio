@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.3 — 2026-08-02
+
+- auto-detect macOS PingFang and common Linux CJK fonts for offline rendering;
+- support an explicit `AIVS_FONT_FILE` override;
+- pass the selected font file to FFmpeg `drawtext` with safe filter escaping;
+- fail clearly when Chinese content has no CJK-capable font instead of rendering boxes.
+- honor English language selection in the deterministic fallback planner.
+
 ## 0.18.2 — 2026-08-02
 
 - update macOS setup to use Homebrew's keg-only `ffmpeg-full` formula;

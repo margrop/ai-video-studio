@@ -24,7 +24,9 @@ def test_worker_emits_social_draft_artifact_for_agent_jobs(tmp_path) -> None:
     store = FileJobStore(tmp_path / "state")
     runtime = build_runtime(store.root)
     service = AIVSToolService(store=store, runtime=runtime)
-    record = store.create(CreateJobRequest(topic="Agent render", use_ai=False, duration_seconds=15))
+    record = store.create(
+        CreateJobRequest(topic="Agent render", use_ai=False, duration_seconds=15, language="en")
+    )
 
     assert asyncio.run(process_once(store, runtime)) is True
     inspected = service.inspect_job(str(record.job_id))
@@ -38,7 +40,12 @@ def test_agent_publish_tool_is_dry_run_by_default(tmp_path) -> None:
     runtime = build_runtime(store.root)
     service = AIVSToolService(store=store, runtime=runtime)
     record = store.create(
-        CreateJobRequest(topic="Agent publish preview", use_ai=False, duration_seconds=15)
+        CreateJobRequest(
+            topic="Agent publish preview",
+            use_ai=False,
+            duration_seconds=15,
+            language="en",
+        )
     )
 
     assert asyncio.run(process_once(store, runtime)) is True

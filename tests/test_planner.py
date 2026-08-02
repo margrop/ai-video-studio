@@ -21,3 +21,18 @@ async def test_deterministic_planner_creates_one_minute_timeline() -> None:
     assert all(shot.prompt for shot in result.plan.shots)
     assert len(result.plan.shots) == 8
     assert all(4 <= shot.duration_seconds <= 15 for shot in result.plan.shots)
+
+
+@pytest.mark.asyncio
+async def test_deterministic_planner_honors_english_language() -> None:
+    result = await StoryPlanner(provider=None).plan(
+        topic="MCP",
+        duration_seconds=15,
+        language="en",
+        use_ai=False,
+    )
+
+    assert result.plan.language == "en"
+    assert all(
+        "\u4e00" > char or char > "\u9fff" for shot in result.plan.shots for char in shot.visual
+    )

@@ -18,9 +18,26 @@ class FFmpegError(RuntimeError):
 
 
 class FFmpegRenderer:
-    def __init__(self, *, ffmpeg_binary: str = "ffmpeg") -> None:
+    _CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+    _CJK_FONT_CANDIDATES = (
+        Path("/System/Library/Fonts/PingFang.ttc"),
+        Path("/System/Library/Fonts/Hiragino Sans GB.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf"),
+        Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+    )
+
+    def __init__(
+        self,
+        *,
+        ffmpeg_binary: str = "ffmpeg",
+        font_file: Path | str | None = None,
+    ) -> None:
         configured_binary = os.getenv("AIVS_FFMPEG_BINARY", "").strip()
         self.ffmpeg_binary = configured_binary or ffmpeg_binary
+        configured_font = os.getenv("AIVS_FONT_FILE", "").strip()
+        selected_font = configured_font or font_file
+        self.font_file = Path(selected_font).expanduser() if selected_font else None
 
     def _require_ffmpeg(self) -> None:
         if shutil.which(self.ffmpeg_binary) is None:
@@ -78,6 +95,55 @@ class FFmpegRenderer:
     def _concat_manifest_path(path: Path) -> str:
         return path.as_posix().replace("'", "'\\''")
 
+    @staticmethod
+    def _filter_path(path: Path) -> str:
+        escaped = path.as_posix().replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+        return f"'{escaped}'"
+
+    @classmethod
+    def _contains_cjk(cls, text: str) -> bool:
+        return cls._CJK_PATTERN.search(text) is not None
+
+    @staticmethod
+    def _fontconfig_cjk_font() -> Path | None:
+        font_list = shutil.which("fc-list")
+        if font_list is None:
+            return None
+        try:
+            completed = subprocess.run(
+                [font_list, "-f", "%{file}\\n", ":lang=zh-cn"],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        for line in completed.stdout.splitlines():
+            candidate = Path(line.strip())
+            if candidate.is_file():
+                return candidate
+        return None
+
+    def _resolve_font_file(self, *, cjk_required: bool) -> Path | None:
+        if self.font_file is not None:
+            if not self.font_file.is_file():
+                raise FFmpegError(f"Configured AIVS_FONT_FILE was not found: {self.font_file}")
+            return self.font_file
+
+        if cjk_required:
+            for candidate in self._CJK_FONT_CANDIDATES:
+                if candidate.is_file():
+                    return candidate
+            matched = self._fontconfig_cjk_font()
+            if matched is not None:
+                return matched
+            raise FFmpegError(
+                "No CJK-capable font was found. Set AIVS_FONT_FILE to a Chinese font "
+                "(macOS: /System/Library/Fonts/PingFang.ttc)."
+            )
+        return None
+
     def render_slideshow(
         self,
         *,
@@ -87,6 +153,11 @@ class FFmpegRenderer:
     ) -> Path:
         self._require_ffmpeg()
         self._require_filter("drawtext")
+        cjk_required = self._contains_cjk(plan.title) or any(
+            self._contains_cjk(shot.visual) for shot in plan.shots
+        )
+        font_file = self._resolve_font_file(cjk_required=cjk_required)
+        font_option = f":fontfile={self._filter_path(font_file)}" if font_file else ""
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="aivs-render-") as temp_dir:
             workspace = Path(temp_dir)
@@ -99,7 +170,8 @@ class FFmpegRenderer:
                 segment_paths.append(segment)
                 drawtext = (
                     f"drawtext=fontcolor=white:fontsize=46:line_spacing=12:"
-                    f"textfile={text_path}:x=(w-text_w)/2:y=(h-text_h)/2"
+                    f"textfile={self._filter_path(text_path)}{font_option}:"
+                    f"x=(w-text_w)/2:y=(h-text_h)/2"
                 )
                 self._run(
                     [

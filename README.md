@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.18.2：
+当前版本是 0.18.3：
 
 ```text
 Markdown / Topic
@@ -56,10 +56,11 @@ Markdown / Topic
 ```bash
 brew install ffmpeg-full
 export AIVS_FFMPEG_BINARY="$(brew --prefix ffmpeg-full)/bin/ffmpeg"
+export AIVS_FONT_FILE="/System/Library/Fonts/PingFang.ttc"
 "$AIVS_FFMPEG_BINARY" -hide_banner -filters | grep drawtext
 ```
 
-如果机器上有多个 FFmpeg，设置 `AIVS_FFMPEG_BINARY` 指向完整版本。建议创建虚拟环境后安装开发依赖：
+如果机器上有多个 FFmpeg，设置 `AIVS_FFMPEG_BINARY` 指向完整版本。AIVS 会在 macOS 自动发现苹方字体，也可用 `AIVS_FONT_FILE` 指定支持中文的 `.ttf`、`.otf` 或 `.ttc` 文件；当中文字体不可用时会中止并给出明确错误，避免输出方框。建议创建虚拟环境后安装开发依赖：
 
 ```bash
 python3 -m venv .venv
