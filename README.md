@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.15.0：
+当前版本是 0.16.0：
 
 ```text
 Markdown / Topic
@@ -44,6 +44,7 @@ Markdown / Topic
 - Provider Registry 支持按服务端声明的 capability 选择模型，任务请求不能覆盖 Provider 或模型配置；
 - 任务记录暴露规划、配音、分镜、合成和社交草稿阶段的实时进度；视频 Provider 每完成一个 Shot 都会写入结构化进度事件；
 - 模板有显式版本和默认 Brand Preset；Brand Preset 可统一提示词、片头/片尾/Logo 素材引用，任务只能选择服务端已注册的预设；
+- Provider 生成的分镜会写入 `shot-manifest-v1`；Worker 重试时会按计划、Provider 和 Prompt 指纹复用已成功 Shot，避免重复消耗；
 
 没有配置 API Key 时，规划和渲染仍然可以离线运行。这个降级路径用于测试和演示，不代表视频模型或 TTS 已经接通。
 
@@ -122,7 +123,8 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
 ```
 
 运维接口：`GET /v1/jobs`、`GET /v1/stats`、`GET /v1/usage`、
-`GET /v1/providers`、`GET /v1/brand-presets` 和 `GET /v1/jobs/{job_id}/events`。任务响应中的
+`GET /v1/providers`、`GET /v1/brand-presets` 和 `GET /v1/jobs/{job_id}/events`。成功任务还可下载
+`shot-manifest.json` 查看每个分镜的状态。任务响应中的
 `progress` 包含 `stage`、`percent`、`completed_shots`、`total_shots` 和
 `current_shot`，可用于轮询或 Dashboard 展示长任务进度。
 
