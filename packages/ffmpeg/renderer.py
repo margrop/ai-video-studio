@@ -48,9 +48,9 @@ class FFmpegRenderer:
         filter_pattern = rf"(?m)^\s*[A-Za-z.]+\s+{re.escape(filter_name)}\s+"
         if re.search(filter_pattern, output) is None:
             hint = (
-                "Install a complete FFmpeg build with libfreetype "
-                "(macOS: brew reinstall ffmpeg), or set "
-                "AIVS_FFMPEG_BINARY to its absolute path."
+                "Install a complete FFmpeg build with libfreetype and libharfbuzz "
+                "(macOS: brew install ffmpeg-full), then set AIVS_FFMPEG_BINARY "
+                "to its absolute path."
             )
             raise FFmpegError(f"FFmpeg filter '{filter_name}' is unavailable. {hint}")
 
