@@ -398,7 +398,11 @@ class FileJobStore:
 
     def stats(self) -> dict[str, int]:
         counts = {"queued": 0, "running": 0, "succeeded": 0, "failed": 0}
-        for record in self.list_jobs(limit=200):
+        for path in self.jobs_dir.glob("*.json"):
+            try:
+                record = JobRecord.model_validate_json(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
             counts[record.status] += 1
         counts["queue_depth"] = sum(1 for _ in self.queue_dir.glob("*.json"))
         return counts

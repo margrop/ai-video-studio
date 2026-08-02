@@ -51,6 +51,13 @@ class HTTPVideoProvider:
 
     @classmethod
     def from_env(cls, *, provider_id: str) -> HTTPVideoProvider:
+        def env_float(name: str, default: float, minimum: float, maximum: float) -> float:
+            try:
+                value = float(os.getenv(name, str(default)))
+            except ValueError:
+                return default
+            return value if minimum <= value <= maximum else default
+
         raw_hosts = os.getenv("AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS", "")
         allowed_hosts = tuple(host.strip() for host in raw_hosts.split(",") if host.strip())
         return cls(
@@ -60,8 +67,8 @@ class HTTPVideoProvider:
             model=os.getenv("AIVS_VIDEO_MODEL", ""),
             submit_path=os.getenv("AIVS_VIDEO_SUBMIT_PATH", "/videos/generations"),
             poll_path_template=os.getenv("AIVS_VIDEO_POLL_PATH", "/videos/{job_id}"),
-            poll_interval_seconds=float(os.getenv("AIVS_VIDEO_POLL_INTERVAL_SECONDS", "2")),
-            max_wait_seconds=float(os.getenv("AIVS_VIDEO_MAX_WAIT_SECONDS", "300")),
+            poll_interval_seconds=env_float("AIVS_VIDEO_POLL_INTERVAL_SECONDS", 2.0, 0, 60),
+            max_wait_seconds=env_float("AIVS_VIDEO_MAX_WAIT_SECONDS", 300.0, 5, 3_600),
             allowed_download_hosts=allowed_hosts,
         )
 
@@ -202,7 +209,8 @@ class HTTPVideoProvider:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             temporary_path = output_path.with_suffix(f"{output_path.suffix}.download")
             try:
-                async with client.stream("GET", safe_url, headers=headers) as response:
+                # Signed/CDN download URLs must not receive the Provider API key.
+                async with client.stream("GET", safe_url) as response:
                     response.raise_for_status()
                     with temporary_path.open("wb") as handle:
                         async for chunk in response.aiter_bytes():

@@ -15,6 +15,7 @@ def test_generic_http_video_provider_submits_polls_and_downloads(tmp_path) -> No
             return httpx.Response(
                 200, json={"status": "succeeded", "video_url": "https://provider.test/video.mp4"}
             )
+        assert "authorization" not in request.headers
         return httpx.Response(200, content=b"synthetic-mp4")
 
     provider = HTTPVideoProvider(

@@ -1,6 +1,6 @@
 # Roadmap
 
-## Phase 1 — current
+## Phase 1 — completed
 
 - FastAPI job API
 - filesystem worker
@@ -10,26 +10,26 @@
 - deterministic SRT and FFmpeg vertical MP4
 - versioned Story Plan contract
 
-## Phase 2 — in progress
+## Phase 2 — foundation completed
 
 - durable local queue with atomic claims and worker leases
 - bounded retry policy with crash recovery
 - idempotency-key index and job event stream
 - job list, stats and provider capability API
-- Web dashboard, usage/cost records, Redis/Postgres backend and compose stack
-  remain the next Phase 2 slices
+- Web dashboard, usage/cost records and compose stack are included
+- Redis/Postgres backend remains the production-scale follow-up
 
-## Phase 3 — in progress
+## Phase 3 — foundation completed
 
 - Character Library, Asset Library and template catalog foundation
 - reference asset IDs and character Prompt Builder integration
 - generic async video provider transport with safe polling/download boundary
 - RSS/Atom → video → social-draft workflow
 - vendor-specific image/video adapters
-- asset upload lifecycle, template versioning and brand presets
-- provider capability discovery and usage/cost records
+- asset upload lifecycle, template versioning and brand presets remain follow-up
+- provider capability discovery and usage/cost records are included
 
-## Phase 4
+## Phase 4 — in progress
 
 - MCP Server
 - Claude Code, Codex and Kimi Code tools
