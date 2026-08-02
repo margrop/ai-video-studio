@@ -22,9 +22,12 @@ from uuid import UUID, uuid4
 from packages.contracts.models import (
     CreateJobRequest,
     JobEvent,
+    JobProgress,
     JobRecord,
+    ProgressStage,
     UsageRecord,
     UsageSummary,
+    progress_percent,
 )
 
 _SECRET_RE = re.compile(
@@ -47,6 +50,7 @@ _JOB_COLUMNS = (
     "social_drafts_path",
     "error_code",
     "error_message",
+    "progress_json",
 )
 
 SCHEMA_STATEMENTS = (
@@ -67,8 +71,12 @@ SCHEMA_STATEMENTS = (
         video_path TEXT,
         social_drafts_path TEXT,
         error_code TEXT,
-        error_message TEXT
+        error_message TEXT,
+        progress_json JSONB NOT NULL DEFAULT '{}'::jsonb
     )
+    """,
+    """
+    ALTER TABLE aivs_jobs ADD COLUMN IF NOT EXISTS progress_json JSONB NOT NULL DEFAULT '{}'::jsonb
     """,
     "CREATE INDEX IF NOT EXISTS aivs_jobs_status_created_idx ON aivs_jobs (status, created_at)",
     """
@@ -315,6 +323,11 @@ class PostgresJobStore:
             social_drafts_path=values["social_drafts_path"],
             error_code=values["error_code"],
             error_message=values["error_message"],
+            progress=JobProgress.model_validate(
+                json.loads(values["progress_json"])
+                if isinstance(values["progress_json"], str)
+                else (values["progress_json"] or {})
+            ),
         )
 
     @staticmethod
@@ -333,6 +346,7 @@ class PostgresJobStore:
             record.social_drafts_path,
             record.error_code,
             record.error_message,
+            record.progress.model_dump_json(),
             record.updated_at,
             record.job_id,
         )
@@ -368,8 +382,11 @@ class PostgresJobStore:
             INSERT INTO aivs_jobs
                 (job_id, status, request_json, attempt, max_attempts, created_at, updated_at,
                  next_retry_at, lease_expires_at, plan_path, subtitle_path, audio_path,
-                 video_path, social_drafts_path, error_code, error_message)
-            VALUES (%s, %s, CAST(%s AS jsonb), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 video_path, social_drafts_path, error_code, error_message, progress_json)
+            VALUES (
+                %s, %s, CAST(%s AS jsonb), %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, CAST(%s AS jsonb)
+            )
             """,
             (
                 record.job_id,
@@ -388,6 +405,7 @@ class PostgresJobStore:
                 record.social_drafts_path,
                 record.error_code,
                 record.error_message,
+                record.progress.model_dump_json(),
             ),
         )
 
@@ -412,7 +430,7 @@ class PostgresJobStore:
                 status = %s, request_json = CAST(%s AS jsonb), attempt = %s, max_attempts = %s,
                 next_retry_at = %s, lease_expires_at = %s, plan_path = %s, subtitle_path = %s,
                 audio_path = %s, video_path = %s, social_drafts_path = %s, error_code = %s,
-                error_message = %s, updated_at = %s
+                error_message = %s, progress_json = CAST(%s AS jsonb), updated_at = %s
             WHERE job_id = %s
             """,
             cls._record_values(record),
@@ -474,6 +492,34 @@ class PostgresJobStore:
             self._update_record(cursor, record)
         return record
 
+    def update_progress(
+        self,
+        record: JobRecord,
+        *,
+        stage: ProgressStage,
+        completed_shots: int = 0,
+        total_shots: int = 0,
+        current_shot: int = 0,
+        message: str = "",
+    ) -> JobRecord:
+        record.progress = JobProgress(
+            stage=stage,
+            percent=progress_percent(
+                stage,
+                completed_shots=completed_shots,
+                total_shots=total_shots,
+                previous_percent=record.progress.percent,
+            ),
+            completed_shots=completed_shots,
+            total_shots=total_shots,
+            current_shot=current_shot,
+            message=_safe_message(message),
+        )
+        with self._session() as (_connection, cursor):
+            self._update_record(cursor, record)
+            self._append_event(cursor, record, "progress", record.progress.message)
+        return record
+
     def recover_expired_leases(self) -> int:
         now = datetime.now(UTC)
         recovered = 0
@@ -528,6 +574,9 @@ class PostgresJobStore:
             record.lease_expires_at = now + timedelta(seconds=self.lease_seconds)
             record.error_code = None
             record.error_message = None
+            record.progress = JobProgress(
+                stage="planning", percent=10, message="worker claimed job"
+            )
             self._update_record(cursor, record)
             self._append_event(cursor, record, "running", "worker claimed job")
             return record
@@ -554,6 +603,15 @@ class PostgresJobStore:
     def finish(self, record: JobRecord, *, provider_id: str = "offline-renderer") -> JobRecord:
         record.lease_expires_at = None
         record.next_retry_at = None
+        total_shots = record.progress.total_shots
+        record.progress = JobProgress(
+            stage="completed",
+            percent=100,
+            completed_shots=total_shots,
+            total_shots=total_shots,
+            current_shot=total_shots,
+            message="render completed",
+        )
         with self._session() as (_connection, cursor):
             self._update_record(cursor, record)
             if record.status == "succeeded":
@@ -578,11 +636,20 @@ class PostgresJobStore:
             delay = min(self.retry_backoff_seconds * (2 ** max(0, record.attempt - 1)), 3_600)
             record.status = "queued"
             record.next_retry_at = now + timedelta(seconds=delay)
+            record.progress = JobProgress(stage="queued", percent=0, message="retry scheduled")
             event_type = "retrying"
             event_message = f"{record.error_code}; retry scheduled"
         else:
             record.status = "failed"
             record.next_retry_at = None
+            record.progress = JobProgress(
+                stage="failed",
+                percent=record.progress.percent,
+                completed_shots=record.progress.completed_shots,
+                total_shots=record.progress.total_shots,
+                current_shot=record.progress.current_shot,
+                message=record.error_message or record.error_code,
+            )
             event_type = "failed"
             event_message = record.error_message or record.error_code
         with self._session() as (_connection, cursor):
