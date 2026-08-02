@@ -53,25 +53,33 @@ class HTTPVideoProvider:
         self.transport = transport
 
     @classmethod
-    def from_env(cls, *, provider_id: str) -> HTTPVideoProvider:
+    def from_env(
+        cls,
+        *,
+        provider_id: str,
+        env_prefix: str = "AIVS_VIDEO",
+    ) -> HTTPVideoProvider:
+        def env(name: str, default: str = "") -> str:
+            return os.getenv(f"{env_prefix}_{name}", os.getenv(f"AIVS_VIDEO_{name}", default))
+
         def env_float(name: str, default: float, minimum: float, maximum: float) -> float:
             try:
-                value = float(os.getenv(name, str(default)))
+                value = float(env(name, str(default)))
             except ValueError:
                 return default
             return value if minimum <= value <= maximum else default
 
-        raw_hosts = os.getenv("AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS", "")
+        raw_hosts = env("ALLOWED_DOWNLOAD_HOSTS")
         allowed_hosts = tuple(host.strip() for host in raw_hosts.split(",") if host.strip())
         return cls(
             provider_id=provider_id,
-            base_url=os.getenv("AIVS_VIDEO_BASE_URL", ""),
-            api_key=os.getenv("AIVS_VIDEO_API_KEY", ""),
-            model=os.getenv("AIVS_VIDEO_MODEL", ""),
-            submit_path=os.getenv("AIVS_VIDEO_SUBMIT_PATH", "/videos/generations"),
-            poll_path_template=os.getenv("AIVS_VIDEO_POLL_PATH", "/videos/{job_id}"),
-            poll_interval_seconds=env_float("AIVS_VIDEO_POLL_INTERVAL_SECONDS", 2.0, 0, 60),
-            max_wait_seconds=env_float("AIVS_VIDEO_MAX_WAIT_SECONDS", 300.0, 5, 3_600),
+            base_url=env("BASE_URL"),
+            api_key=env("API_KEY"),
+            model=env("MODEL"),
+            submit_path=env("SUBMIT_PATH", "/videos/generations"),
+            poll_path_template=env("POLL_PATH", "/videos/{job_id}"),
+            poll_interval_seconds=env_float("POLL_INTERVAL_SECONDS", 2.0, 0, 60),
+            max_wait_seconds=env_float("MAX_WAIT_SECONDS", 300.0, 5, 3_600),
             allowed_download_hosts=allowed_hosts,
         )
 
