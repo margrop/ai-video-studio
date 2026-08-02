@@ -69,6 +69,7 @@ class FakeCursor:
                 "social_drafts_path",
                 "error_code",
                 "error_message",
+                "progress_json",
             )
         )
 
@@ -76,7 +77,7 @@ class FakeCursor:
         normalized = self._normalized(query)
         self.rows = []
         self.rowcount = -1
-        if normalized.startswith("create "):
+        if normalized.startswith("create ") or normalized.startswith("alter table"):
             self.database.schema_statements.append(query)
             return
 
@@ -99,6 +100,7 @@ class FakeCursor:
                 "social_drafts_path",
                 "error_code",
                 "error_message",
+                "progress_json",
             )
             self.database.jobs[values[0]] = dict(zip(names, values, strict=True))
             self.rowcount = 1
@@ -165,6 +167,7 @@ class FakeCursor:
                     "social_drafts_path",
                     "error_code",
                     "error_message",
+                    "progress_json",
                     "updated_at",
                 ),
                 values[:-1],
@@ -350,6 +353,27 @@ def test_postgres_store_retries_and_redacts_failures(tmp_path) -> None:
     assert exhausted.status == "failed"
     assert store.usage.summary().failed_jobs == 1
     assert store.get(created.job_id).status == "failed"
+
+
+def test_postgres_store_persists_shot_progress(tmp_path) -> None:
+    store, _database = build_store(tmp_path)
+    created = store.create(CreateJobRequest(topic="Postgres progress", use_ai=False))
+    claimed = store.claim_next()
+    assert claimed is not None
+
+    store.update_progress(
+        claimed,
+        stage="video",
+        completed_shots=4,
+        total_shots=8,
+        current_shot=5,
+        message="已完成 Shot 4/8",
+    )
+    observed = store.get(created.job_id)
+    assert observed is not None
+    assert observed.progress.percent == 58
+    assert observed.progress.current_shot == 5
+    assert store.events(created.job_id)[-1].event_type == "progress"
 
 
 def test_postgres_store_recovers_expired_lease(tmp_path) -> None:
