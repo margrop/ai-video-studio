@@ -20,7 +20,12 @@ The provider class should expose `provider_id`, optional `provider_kind` and
 `capabilities`, then implement `VideoProvider.generate`. A provider-backed
 workflow calls this method once per validated Story Plan shot, with a 4–15
 second duration and the server-owned character reference images. Set
-`AIVS_VIDEO_PROVIDER` to that server-owned ID to activate it.
+`AIVS_VIDEO_PROVIDER` to that server-owned ID to activate it. The repository
+also contains transport-compatible scaffolds for `minimax-video`, `kling`,
+`google-veo`, `runway` and `openai-video`; they use vendor-prefixed
+`*_VIDEO_*` environment variables but do not claim that the vendor API shape
+has been verified. Enable one only after its endpoint, credential, quota and
+response contract has been tested.
 
 ## MiniMax H3
 

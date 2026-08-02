@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.12.0：
+当前版本是 0.13.0：
 
 ```text
 Markdown / Topic
@@ -40,7 +40,8 @@ Markdown / Topic
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
-- Kling、Veo、Runway、OpenAI 等 Provider 有隔离目录和扩展合同。
+- Kling、Veo、Runway、OpenAI 等 Provider 有隔离目录、能力声明和 transport-compatible 扩展骨架；启用前仍需按供应商验证 API 合同。
+- Provider Registry 支持按服务端声明的 capability 选择模型，任务请求不能覆盖 Provider 或模型配置；
 
 没有配置 API Key 时，规划和渲染仍然可以离线运行。这个降级路径用于测试和演示，不代表视频模型或 TTS 已经接通。
 

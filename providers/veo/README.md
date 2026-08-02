@@ -1,4 +1,5 @@
 # Google Veo provider
 
-Add the Google-specific adapter here when the project has a tested credential
-and quota strategy. Do not make the workflow import Google SDK types.
+`GoogleVeoVideoProvider` is a transport-compatible scaffold. Add the
+Google-specific request/credential adapter here after the credential and quota
+strategy is tested; do not make the workflow import Google SDK types.

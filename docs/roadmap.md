@@ -32,8 +32,9 @@
 - generic async video provider transport with safe polling/download boundary
 - RSS/Atom → video → social-draft workflow
 - generic provider registry, safe async video transport and shot-by-shot composition
-- vendor-specific image/video adapters, template versioning and brand presets
-  remain extension work
+- transport-compatible MiniMax/Kling/Veo/Runway/OpenAI video scaffolds are
+  included; verified vendor-specific request adapters, template versioning and
+  brand presets remain extension work
 - provider capability discovery and usage/cost records are included
 
 ## Phase 4 — in progress

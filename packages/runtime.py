@@ -19,7 +19,11 @@ from packages.providers.http_video import HTTPVideoProvider
 from packages.publishing import PublisherRegistry
 from packages.tts import SilentTTSProvider
 from packages.workflow import RenderWorkflow
-from providers.minimax import MiniMaxH3Provider, MiniMaxTTSProvider
+from providers.kling import KlingVideoProvider
+from providers.minimax import MiniMaxH3Provider, MiniMaxTTSProvider, MiniMaxVideoProvider
+from providers.openai import OpenAIVideoProvider
+from providers.runway import RunwayVideoProvider
+from providers.veo import GoogleVeoVideoProvider
 
 
 class _OfflinePlannerProvider:
@@ -28,6 +32,15 @@ class _OfflinePlannerProvider:
 
 class _OfflineVideoProvider:
     provider_id = "offline-renderer"
+
+
+_VENDOR_VIDEO_FACTORIES = {
+    "minimax-video": MiniMaxVideoProvider,
+    "kling": KlingVideoProvider,
+    "google-veo": GoogleVeoVideoProvider,
+    "runway": RunwayVideoProvider,
+    "openai-video": OpenAIVideoProvider,
+}
 
 
 @dataclass(frozen=True)
@@ -83,6 +96,21 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
         candidate = registry.get(configured_video_id)
         if hasattr(candidate, "generate"):
             video_provider = candidate  # type: ignore[assignment]
+    elif configured_video_id in _VENDOR_VIDEO_FACTORIES:
+        candidate = _VENDOR_VIDEO_FACTORIES[configured_video_id].from_env()
+        if all((candidate.base_url, candidate.api_key, candidate.model)):
+            video_provider = candidate
+            registry.register(
+                video_provider,
+                kind="video",
+                capabilities=tuple(candidate.capabilities),
+            )
+        else:
+            registry.register(
+                _OfflineVideoProvider(),
+                kind="video",
+                capabilities=("slideshow", "ffmpeg"),
+            )
     elif configured_video_id and all(
         os.getenv(key) for key in ("AIVS_VIDEO_BASE_URL", "AIVS_VIDEO_API_KEY", "AIVS_VIDEO_MODEL")
     ):

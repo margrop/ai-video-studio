@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 
 from packages.llm import OpenAICompatibleLLMProvider
+from packages.providers.http_video import HTTPVideoProvider
 from packages.tts.openai_compatible import OpenAICompatibleTTSProvider
 
 
@@ -51,4 +52,19 @@ class MiniMaxTTSProvider(OpenAICompatibleTTSProvider):
         )
 
 
-__all__ = ["MiniMaxH3Provider", "MiniMaxTTSProvider"]
+class MiniMaxVideoProvider(HTTPVideoProvider):
+    """Transport-compatible MiniMax video scaffold.
+
+    The endpoint contract remains server-configured until the vendor-specific
+    request and response shape is verified. It deliberately reuses only the
+    generic submit/poll/download boundary.
+    """
+
+    provider_id = "minimax-video"
+
+    @classmethod
+    def from_env(cls) -> MiniMaxVideoProvider:
+        return super().from_env(provider_id=cls.provider_id, env_prefix="AIVS_MINIMAX_VIDEO")
+
+
+__all__ = ["MiniMaxH3Provider", "MiniMaxTTSProvider", "MiniMaxVideoProvider"]

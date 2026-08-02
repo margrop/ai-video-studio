@@ -85,6 +85,31 @@ class ProviderRegistry:
     def descriptors(self) -> tuple[ProviderDescriptor, ...]:
         return tuple(self._descriptors[provider_id] for provider_id in self.ids())
 
+    def select(
+        self,
+        *,
+        kind: str,
+        required_capabilities: tuple[str, ...] = (),
+        preferred_id: str | None = None,
+    ) -> object | None:
+        """Select a server-configured provider by capability, not user input."""
+
+        required = set(required_capabilities)
+        descriptors = list(self.descriptors())
+        if preferred_id:
+            descriptors = [
+                descriptor for descriptor in descriptors if descriptor.provider_id == preferred_id
+            ]
+        candidates = [
+            descriptor
+            for descriptor in descriptors
+            if descriptor.kind == kind and required.issubset(descriptor.capabilities)
+        ]
+        if not candidates:
+            return None
+        selected = candidates[0]
+        return self.get(selected.provider_id)
+
     def load_entry_points(self, *, group: str = "aivs.video_providers") -> tuple[str, ...]:
         """Load installed provider plugins without importing vendors in the workflow."""
 
