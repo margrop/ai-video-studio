@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.17.0：
+当前版本是 0.18.0：
 
 ```text
 Markdown / Topic
@@ -37,7 +37,7 @@ Markdown / Topic
 - Asset Library 支持服务端路径受控的二进制上传/下载、大小限制和 SHA-256 完整性记录；
 - 成功任务会生成各平台社交草稿，MCP 可让本地 Agent 一句话调用整条流水线；
 - 60 秒计划默认拆成 8 个约 7.5 秒 Shot；视频 Provider 逐 Shot 生成后再统一合成；
-- MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
+- Story Planner 可以通过你的 NewAPI 使用任意配置好的文本模型；MiniMax H3 作为原生异步视频 Provider 接入；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
 - Kling、Veo、Runway、OpenAI 等 Provider 有隔离目录、能力声明和 transport-compatible 扩展骨架；启用前仍需按供应商验证 API 合同。
@@ -81,18 +81,32 @@ ffprobe -v error -show_entries format=duration,size \
   -of default=noprint_wrappers=1 artifacts/mcp-intro.mp4
 ```
 
-## 使用 MiniMax H3
+## 使用 NewAPI 和 MiniMax H3
 
-AIVS 不在用户请求中接受 `provider`、`model`、`messages` 或 API Key。Provider 和模型由服务端环境配置决定，符合现有 `margrop-labs` 的 AI Gateway 边界。
+AIVS 不在用户请求中接受 `provider`、`model`、`messages` 或 API Key。文本 Planner 通过服务端配置的 NewAPI/OpenAI-compatible Gateway 调用；视频 Shot 通过独立的原生 MiniMax H3 Provider 调用，二者不会混淆。
 
 ```bash
 export AIVS_LLM_BASE_URL="http://127.0.0.1:3001/v1"
 export AIVS_LLM_API_KEY="your-local-secret"
-export AIVS_LLM_MODEL="MiniMax-H3"
+export AIVS_LLM_MODEL="minimax-latest"
+
+# Native MiniMax H3 video generation. Use api.minimaxi.com for a China
+# Developer Platform account when that is the base URL shown by the account.
+export AIVS_VIDEO_PROVIDER="minimax-video"
+export AIVS_MINIMAX_VIDEO_BASE_URL="https://api.minimax.io"
+export AIVS_MINIMAX_VIDEO_API_KEY="your-minimax-developer-api-key"
+export AIVS_MINIMAX_VIDEO_MODEL="MiniMax-H3"
+export AIVS_MINIMAX_VIDEO_RESOLUTION="768P"
+export AIVS_MINIMAX_VIDEO_RATIO="9:16"
+export AIVS_MINIMAX_VIDEO_POLL_INTERVAL_SECONDS="10"
+export AIVS_MINIMAX_VIDEO_MAX_WAIT_SECONDS="900"
+export AIVS_MINIMAX_VIDEO_ALLOWED_DOWNLOAD_HOSTS="filecdn.minimax.chat"
 aivs generate "介绍 AI 面试工作台" --output artifacts/interview-workbench.mp4
 ```
 
-如果上游不可用，Story Planner 会返回确定性降级计划，并在 `warnings` 中说明原因；不会伪造“AI 已成功生成”。
+H3 视频请求必须使用 MiniMax Developer API Key，并且每个 Shot 时长为 4–15 秒。AIVS 会按 Story Plan 逐 Shot 提交任务，再由 FFmpeg 合成约一分钟成片。H3 的参考图片必须通过 `AIVS_ASSET_PUBLIC_URL_TEMPLATE` 配置为 MiniMax 可访问的公开或签名 URL。
+
+如果文本上游不可用，Story Planner 会返回确定性降级计划；如果 H3 视频上游不可用，任务会保留 Shot Manifest 中的失败状态，不会伪造“AI 已成功生成”。
 
 ## API 与 Worker
 
