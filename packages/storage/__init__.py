@@ -1,4 +1,4 @@
-"""Filesystem storage with atomic-enough job state transitions for a local MVP."""
+"""Filesystem storage with recoverable queue state and idempotency."""
 
 from .jobs import FileJobStore
 

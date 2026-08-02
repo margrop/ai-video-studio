@@ -31,10 +31,22 @@ The current `StoryPlan` is the handoff point shared by future workflows. A video
 
 ## Runtime topology
 
-Phase 1 uses a filesystem queue:
+The current local backend uses a filesystem queue with atomic state writes:
 
 ```text
-FastAPI → .aivs/queue → worker → .aivs/artifacts/{job_id}
+FastAPI → .aivs/queue → atomic claim → .aivs/processing
+                                      ↓
+                         retry / lease recovery / artifacts
 ```
 
-Phase 2 can replace only `FileJobStore` with Redis/Postgres-backed storage. The API contract and workflow inputs should remain stable.
+Each job has a durable record, an idempotency index, a processing lease and a
+JSONL event stream. A worker crash leaves a lease that the next claimant can
+recover. Phase 2 can replace only `FileJobStore` with Redis/Postgres-backed
+storage; the API contract and workflow inputs should remain stable.
+
+## Provider registry
+
+The runtime registers active providers by capability (`llm`, `tts`, `video`).
+The API exposes only provider IDs, capabilities and configured status. The
+workflow receives concrete interfaces, while operators can inspect the active
+runtime without learning or submitting vendor credentials.

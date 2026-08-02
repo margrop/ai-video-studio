@@ -10,11 +10,22 @@ def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
     response = client.post(
         "/v1/jobs",
         json={"topic": "Synthetic API job", "duration_seconds": 15, "use_ai": False},
+        headers={"Idempotency-Key": "api-request-1"},
     )
     assert response.status_code == 202
     body = response.json()
     assert body["status"] == "queued"
     assert client.get(f"/v1/jobs/{body['job_id']}").json()["job_id"] == body["job_id"]
+    duplicate = client.post(
+        "/v1/jobs",
+        json={"topic": "Synthetic API job", "duration_seconds": 15, "use_ai": False},
+        headers={"Idempotency-Key": "api-request-1"},
+    )
+    assert duplicate.json()["job_id"] == body["job_id"]
+    assert client.get("/v1/jobs").json()[0]["job_id"] == body["job_id"]
+    assert client.get("/v1/stats").json()["queue_depth"] == 1
+    assert client.get("/v1/providers").json()["providers"]
+    assert client.get(f"/v1/jobs/{body['job_id']}/events").json()[0]["event_type"] == "queued"
 
     rejected = client.post(
         "/v1/jobs",

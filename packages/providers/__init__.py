@@ -1,5 +1,5 @@
 """Provider registry and capability contracts."""
 
-from .base import ProviderRegistry, VideoProvider
+from .base import ProviderDescriptor, ProviderRegistry, VideoProvider
 
-__all__ = ["ProviderRegistry", "VideoProvider"]
+__all__ = ["ProviderDescriptor", "ProviderRegistry", "VideoProvider"]

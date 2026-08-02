@@ -10,13 +10,14 @@
 - deterministic SRT and FFmpeg vertical MP4
 - versioned Story Plan contract
 
-## Phase 2
+## Phase 2 — in progress
 
-- Redis/Postgres job backend
-- retry policy and idempotency keys
-- Web dashboard for history, usage, failed jobs and artifacts
-- structured provider usage/cost records
-- container image and local compose stack
+- durable local queue with atomic claims and worker leases
+- bounded retry policy with crash recovery
+- idempotency-key index and job event stream
+- job list, stats and provider capability API
+- Web dashboard, usage/cost records, Redis/Postgres backend and compose stack
+  remain the next Phase 2 slices
 
 ## Phase 3
 

@@ -64,8 +64,12 @@ class JobRecord(StrictModel):
     job_id: UUID = Field(default_factory=uuid4)
     status: Literal["queued", "running", "succeeded", "failed"] = "queued"
     request: CreateJobRequest
+    attempt: int = Field(default=0, ge=0, le=100)
+    max_attempts: int = Field(default=3, ge=1, le=100)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    next_retry_at: datetime | None = None
+    lease_expires_at: datetime | None = None
     plan_path: str | None = None
     subtitle_path: str | None = None
     audio_path: str | None = None
@@ -81,7 +85,35 @@ class JobRecord(StrictModel):
         return value
 
 
+class JobEvent(StrictModel):
+    event_id: UUID = Field(default_factory=uuid4)
+    job_id: UUID
+    event_type: Literal["queued", "running", "retrying", "succeeded", "failed"]
+    attempt: int = Field(default=0, ge=0, le=100)
+    message: str = Field(default="", max_length=300)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class JobStatsResponse(StrictModel):
+    queued: int = Field(default=0, ge=0)
+    running: int = Field(default=0, ge=0)
+    succeeded: int = Field(default=0, ge=0)
+    failed: int = Field(default=0, ge=0)
+    queue_depth: int = Field(default=0, ge=0)
+
+
+class ProviderStatus(StrictModel):
+    provider_id: str = Field(min_length=1, max_length=100)
+    kind: Literal["llm", "tts", "video"]
+    capabilities: list[str] = Field(default_factory=list, max_length=20)
+    configured: bool = True
+
+
+class ProviderListResponse(StrictModel):
+    providers: list[ProviderStatus] = Field(default_factory=list, max_length=100)
+
+
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.1.0"
+    version: str = "0.2.0"

@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 Phase 1 MVP：
+当前版本是 Phase 2 foundation：
 
 ```text
 Markdown / Topic
@@ -20,6 +20,8 @@ Markdown / Topic
 - `aivs generate "介绍 MCP 是什么"` 一句话生成一个 9:16 MP4；
 - `aivs plan` 单独生成版本化 `story-plan-v1`；
 - FastAPI 接受任务，文件队列 worker 处理任务；
+- 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
+- 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
@@ -88,6 +90,18 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
 
 然后用返回的 `job_id` 查询 `/v1/jobs/{job_id}`，成功后从 `/v1/jobs/{job_id}/artifacts/video.mp4` 下载。
 
+客户端重试时建议发送相同的 `Idempotency-Key`，避免网络超时造成重复任务：
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/jobs \
+  -H 'content-type: application/json' \
+  -H 'Idempotency-Key: mcp-intro-2026-08-01' \
+  -d '{"topic":"介绍 MCP","duration_seconds":60,"use_ai":false}'
+```
+
+运维接口：`GET /v1/jobs`、`GET /v1/stats`、`GET /v1/providers` 和
+`GET /v1/jobs/{job_id}/events`。
+
 ## 项目结构
 
 ```text
@@ -141,9 +155,9 @@ pytest
 
 ## 路线图
 
-- Phase 1：本仓库当前切片，FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
-- Phase 2：Redis/任务队列、重试、Web Dashboard、持久化 Provider 用量。
+- Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
+- Phase 2（当前）：可恢复本地任务队列、幂等、重试、事件、Provider 能力和运维 API；接下来是 Dashboard、Redis/Postgres 和用量账本。
 - Phase 3：Character Library、Asset Library、真正的视频 Provider、多镜头素材。
 - Phase 4：MCP Server、博客/公众号/知乎/B 站等发布 Workflow。
 
-当前仓库尚未选择最终开源许可证；在首个正式 release 前必须由仓库所有者明确许可证并补充 `LICENSE`。
+本项目使用 MIT License，详见 [`LICENSE`](LICENSE)。
