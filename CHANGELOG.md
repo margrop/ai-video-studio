@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.0 — 2026-08-02
+
+- add versioned `shot-manifest-v1` state for provider-generated clips;
+- reuse successful clips after a worker retry when the plan, Provider and
+  prompt fingerprints still match;
+- persist pending/running/succeeded/failed Shot state before and after each
+  provider call;
+- expose the manifest as a protected downloadable job artifact.
+
 ## 0.15.0 — 2026-08-02
 
 - add explicit template versions and server-owned Brand Preset catalog;
