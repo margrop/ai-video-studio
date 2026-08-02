@@ -62,6 +62,28 @@ def create_server(service: AIVSToolService | None = None):
 
         return tool_service.create_social_drafts(job_id)
 
+    @server.tool()
+    async def publish_social_draft(
+        job_id: str,
+        platform: str,
+        actor: str = "agent",
+        dry_run: bool = True,
+    ) -> dict[str, object]:
+        """Preview or approval-gated publish; dry_run defaults to true."""
+
+        return await tool_service.publish_social_draft(
+            job_id=job_id,
+            platform=platform,
+            actor=actor,
+            dry_run=dry_run,
+        )
+
+    @server.tool()
+    async def list_publish_audit(job_id: str) -> list[dict[str, object]]:
+        """List safe publish decisions and outcomes for a job."""
+
+        return tool_service.list_publish_audit(job_id)
+
     return server
 
 
