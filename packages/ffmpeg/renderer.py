@@ -43,6 +43,10 @@ class FFmpegRenderer:
             raise FFmpegError(f"FFmpeg failed: {' '.join(detail)[:300]}") from exc
         _ = completed
 
+    @staticmethod
+    def _concat_manifest_path(path: Path) -> str:
+        return path.as_posix().replace("'", "'\\''")
+
     def render_slideshow(
         self,
         *,
@@ -152,6 +156,59 @@ class FFmpegRenderer:
             plan=plan,
             output_path=output_path,
             audio_path=audio_path,
+        )
+
+    def concat_videos(self, *, video_paths: tuple[Path, ...], output_path: Path) -> Path:
+        """Join provider-generated shot clips into one silent video.
+
+        Clips are re-encoded at the composition boundary instead of assuming
+        that every vendor returns identical codec and time-base settings.
+        Provider audio is intentionally discarded; the narration track is
+        attached once after the shot list has been joined.
+        """
+
+        self._require_ffmpeg()
+        if not video_paths:
+            raise FFmpegError("no provider shot videos were generated")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="aivs-concat-") as temp_dir:
+            concat_file = Path(temp_dir) / "concat.txt"
+            concat_file.write_text(
+                "\n".join(f"file '{self._concat_manifest_path(path)}'" for path in video_paths),
+                encoding="utf-8",
+            )
+            self._run(
+                [
+                    self.ffmpeg_binary,
+                    "-y",
+                    "-f",
+                    "concat",
+                    "-safe",
+                    "0",
+                    "-i",
+                    str(concat_file),
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(output_path),
+                ]
+            )
+        return output_path
+
+    async def concat_videos_async(
+        self,
+        *,
+        video_paths: tuple[Path, ...],
+        output_path: Path,
+    ) -> Path:
+        return await asyncio.to_thread(
+            self.concat_videos,
+            video_paths=video_paths,
+            output_path=output_path,
         )
 
     def mux_audio(
