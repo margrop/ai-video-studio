@@ -16,7 +16,7 @@ COPY providers ./providers
 COPY schemas ./schemas
 COPY templates ./templates
 
-RUN python -m pip install --no-cache-dir .
+RUN python -m pip install --no-cache-dir '.[redis]'
 
 VOLUME ["/data"]
 EXPOSE 8000

@@ -39,7 +39,7 @@ The current `StoryPlan` is the handoff point shared by future workflows. A video
 
 ## Runtime topology
 
-The current local backend uses a filesystem queue with atomic state writes:
+The default local backend uses a filesystem queue with atomic state writes:
 
 ```text
 FastAPI → .aivs/queue → atomic claim → .aivs/processing
@@ -49,8 +49,18 @@ FastAPI → .aivs/queue → atomic claim → .aivs/processing
 
 Each job has a durable record, an idempotency index, a processing lease and a
 JSONL event stream. A worker crash leaves a lease that the next claimant can
-recover. Phase 2 can replace only `FileJobStore` with Redis/Postgres-backed
-storage; the API contract and workflow inputs should remain stable.
+recover. The optional Redis backend keeps the same contract with a reliable
+processing list, sorted-set retry schedule and Redis event/usage records:
+
+```text
+FastAPI → Redis queue → reliable processing list → worker
+                              ↓ lease expiry
+                       requeue / terminal failure
+```
+
+The API contract and workflow inputs remain stable when switching backends.
+Redis shares queue metadata, while generated files and local catalogs still
+need a shared volume or a future object-storage/catalog adapter.
 
 ## Provider registry
 

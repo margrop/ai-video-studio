@@ -4,7 +4,10 @@ services:
     ports:
       - "8000:8000"
     environment:
+      AIVS_STORAGE_BACKEND: ${AIVS_STORAGE_BACKEND:-filesystem}
       AIVS_STORAGE_ROOT: /data/.aivs
+      AIVS_REDIS_URL: ${AIVS_REDIS_URL:-redis://redis:6379/0}
+      AIVS_REDIS_NAMESPACE: ${AIVS_REDIS_NAMESPACE:-aivs}
       AIVS_LLM_BASE_URL: ${AIVS_LLM_BASE_URL:-}
       AIVS_LLM_API_KEY: ${AIVS_LLM_API_KEY:-}
       AIVS_LLM_MODEL: ${AIVS_LLM_MODEL:-}
@@ -25,7 +28,10 @@ services:
     build: .
     command: ["aivs-worker", "--storage-root", "/data/.aivs"]
     environment:
+      AIVS_STORAGE_BACKEND: ${AIVS_STORAGE_BACKEND:-filesystem}
       AIVS_STORAGE_ROOT: /data/.aivs
+      AIVS_REDIS_URL: ${AIVS_REDIS_URL:-redis://redis:6379/0}
+      AIVS_REDIS_NAMESPACE: ${AIVS_REDIS_NAMESPACE:-aivs}
       AIVS_LLM_BASE_URL: ${AIVS_LLM_BASE_URL:-}
       AIVS_LLM_API_KEY: ${AIVS_LLM_API_KEY:-}
       AIVS_LLM_MODEL: ${AIVS_LLM_MODEL:-}
@@ -42,5 +48,12 @@ services:
     volumes:
       - aivs_data:/data
 
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
 volumes:
   aivs_data:
+  redis_data:

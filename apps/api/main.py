@@ -27,19 +27,19 @@ from packages.contracts.models import (
 )
 from packages.library import CatalogNotFound
 from packages.runtime import AppRuntime, build_runtime
-from packages.storage import FileJobStore
+from packages.storage import JobStore, build_job_store
 
 WEB_ROOT = Path(__file__).parents[1] / "web"
 
 
 def create_app(
     *,
-    store: FileJobStore | None = None,
+    store: JobStore | None = None,
     runtime: AppRuntime | None = None,
 ) -> FastAPI:
-    job_store = store or FileJobStore.from_env(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
+    job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.3.0")
+    app = FastAPI(title="AI Video Studio API", version="0.4.0")
 
     @app.get("/", include_in_schema=False)
     @app.get("/dashboard", include_in_schema=False)

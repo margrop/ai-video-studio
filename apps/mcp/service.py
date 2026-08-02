@@ -9,21 +9,21 @@ from apps.worker.main import process_once
 from packages.contracts.models import CreateJobRequest, StoryPlan
 from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
-from packages.storage import FileJobStore
+from packages.storage import JobStore, build_job_store
 
 
 @dataclass(slots=True)
 class AIVSToolService:
-    store: FileJobStore
+    store: JobStore
     runtime: AppRuntime
 
     @classmethod
     def from_env(cls) -> AIVSToolService:
-        store = FileJobStore.from_env()
+        store = build_job_store()
         return cls(store=store, runtime=build_runtime(store.root))
 
     @staticmethod
-    def _artifact_paths(store: FileJobStore, job_id: UUID) -> dict[str, str]:
+    def _artifact_paths(store: JobStore, job_id: UUID) -> dict[str, str]:
         directory = store.artifacts_dir / str(job_id)
         names = (
             "video.mp4",

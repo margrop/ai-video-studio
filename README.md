@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 Phase 2 foundation：
+当前版本是 0.4.0：
 
 ```text
 Markdown / Topic
@@ -20,6 +20,7 @@ Markdown / Topic
 - `aivs generate "介绍 MCP 是什么"` 一句话生成一个 9:16 MP4；
 - `aivs plan` 单独生成版本化 `story-plan-v1`；
 - FastAPI 接受任务，文件队列 worker 处理任务；
+- 可通过 `AIVS_STORAGE_BACKEND=redis` 切换到 Redis 多进程队列，默认仍是离线文件队列；
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
 - `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
@@ -115,7 +116,7 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
 ```text
 apps/
 ├── api/       # FastAPI 任务 API
-├── worker/    # 文件队列 worker；Phase 2 可替换 Redis/Celery
+├── worker/    # 文件/Redis 队列 worker
 ├── cli/       # 一句话 CLI
 └── web/       # 零构建依赖的 Web 管理后台
 packages/
@@ -128,7 +129,7 @@ packages/
 ├── subtitle/  # SRT
 ├── tts/       # TTS 接口与实现
 ├── ffmpeg/    # 确定性视频合成
-├── storage/   # 本地任务状态
+├── storage/   # 文件或 Redis 任务状态、租约与用量
 └── workflow/  # 内容流水线编排
 providers/
 ├── minimax/   # MiniMax H3 / TTS 适配器
@@ -165,7 +166,7 @@ pytest
 ## 路线图
 
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
-- Phase 2：可恢复本地任务队列、幂等、重试、事件、Provider 能力、运维 API 和 Dashboard 已完成；Redis/Postgres 仍待接入。
+- Phase 2：可恢复本地任务队列、Redis 多进程队列、幂等、重试、事件、Provider 能力、运维 API 和 Dashboard 已完成；Postgres 与对象存储仍待接入。
 - Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本和通用异步视频传输已完成；接下来是各供应商的专用适配器与多镜头素材。
 - Phase 4（当前）：可选 MCP Server、社交草稿和 Docker/CI 基线；真实平台发布仍需独立适配器与人工审批。
 
