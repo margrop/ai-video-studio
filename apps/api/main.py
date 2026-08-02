@@ -22,10 +22,14 @@ from packages.contracts.models import (
     JobStatsResponse,
     ProviderListResponse,
     ProviderStatus,
+    SocialApprovalRecord,
+    SocialApprovalRequest,
+    SocialDraftBundle,
     TemplateSummary,
     UsageSummary,
 )
 from packages.library import CatalogNotFound
+from packages.publishing import ApprovalStore
 from packages.runtime import AppRuntime, build_runtime
 from packages.security import APIAuthenticator, build_rate_limiter, security_headers
 from packages.storage import JobStore, build_job_store
@@ -40,7 +44,8 @@ def create_app(
 ) -> FastAPI:
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.5.0")
+    app = FastAPI(title="AI Video Studio API", version="0.6.0")
+    approval_store = ApprovalStore(job_store.root / "approvals")
     authenticator = APIAuthenticator.from_env()
     rate_limiter = build_rate_limiter(job_store)
 
@@ -193,6 +198,44 @@ def create_app(
             raise HTTPException(status_code=404, detail="character_not_found")
         return record
 
+    def _social_drafts(job_id: UUID) -> SocialDraftBundle:
+        record = job_store.get(job_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="job_not_found")
+        if record.status != "succeeded":
+            raise HTTPException(status_code=409, detail="job_not_ready")
+        path = job_store.artifacts_dir / str(job_id) / "social-drafts.json"
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="social_drafts_not_found")
+        try:
+            return SocialDraftBundle.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail="social_drafts_invalid") from exc
+
+    @app.get("/v1/jobs/{job_id}/social-drafts", response_model=SocialDraftBundle)
+    async def get_social_drafts(job_id: UUID) -> SocialDraftBundle:
+        return _social_drafts(job_id)
+
+    @app.get("/v1/jobs/{job_id}/approvals", response_model=list[SocialApprovalRecord])
+    async def get_approvals(job_id: UUID) -> list[SocialApprovalRecord]:
+        if job_store.get(job_id) is None:
+            raise HTTPException(status_code=404, detail="job_not_found")
+        return approval_store.list(job_id)
+
+    @app.post(
+        "/v1/jobs/{job_id}/approvals",
+        response_model=SocialApprovalRecord,
+        status_code=status.HTTP_201_CREATED,
+    )
+    async def decide_approval(
+        job_id: UUID,
+        request: SocialApprovalRequest,
+    ) -> SocialApprovalRecord:
+        bundle = _social_drafts(job_id)
+        if request.platform not in {draft.platform for draft in bundle.drafts}:
+            raise HTTPException(status_code=422, detail="platform_not_in_social_drafts")
+        return approval_store.decide(job_id, request)
+
     @app.get("/v1/jobs/{job_id}/artifacts/{artifact_name}")
     async def get_artifact(job_id: UUID, artifact_name: str) -> FileResponse:
         record = job_store.get(job_id)
@@ -224,6 +267,7 @@ def create_app(
 
     app.state.job_store = job_store
     app.state.runtime = app_runtime
+    app.state.approvals = approval_store
     app.state.workflow_factory = lambda: app_runtime.workflow
     return app
 

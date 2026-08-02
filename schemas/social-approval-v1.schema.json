@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/margrop/ai-video-studio/schemas/social-approval-v1.schema.json",
+  "title": "Social Approval Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["approval_id", "job_id", "platform", "decision", "reviewer", "note", "created_at"],
+  "properties": {
+    "approval_id": {"type": "string", "format": "uuid"},
+    "job_id": {"type": "string", "format": "uuid"},
+    "platform": {"enum": ["blog", "wechat", "zhihu", "bilibili", "xiaohongshu", "douyin", "podcast"]},
+    "decision": {"enum": ["approved", "rejected"]},
+    "reviewer": {"type": "string", "minLength": 1, "maxLength": 100},
+    "note": {"type": "string", "maxLength": 2000},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

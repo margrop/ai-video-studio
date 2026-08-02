@@ -217,7 +217,23 @@ class SocialDraftBundle(StrictModel):
     drafts: list[SocialDraft] = Field(min_length=1, max_length=20)
 
 
+ApprovalDecision = Literal["approved", "rejected"]
+
+
+class SocialApprovalRequest(StrictModel):
+    platform: SocialPlatform
+    decision: ApprovalDecision
+    reviewer: str = Field(default="operator", min_length=1, max_length=100)
+    note: str = Field(default="", max_length=2000)
+
+
+class SocialApprovalRecord(SocialApprovalRequest):
+    approval_id: UUID = Field(default_factory=uuid4)
+    job_id: UUID
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.5.0"
+    version: str = "0.6.0"

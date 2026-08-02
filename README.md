@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.5.0：
+当前版本是 0.6.0：
 
 ```text
 Markdown / Topic
@@ -22,6 +22,7 @@ Markdown / Topic
 - FastAPI 接受任务，文件队列 worker 处理任务；
 - 可通过 `AIVS_STORAGE_BACKEND=redis` 切换到 Redis 多进程队列，默认仍是离线文件队列；
 - 配置 `AIVS_API_KEY` 后，所有 `/v1` API 使用服务端 API Key 鉴权并启用限流；
+- Dashboard 可对社交草稿逐平台留下通过/驳回记录，系统不会绕过人工审批自动发布；
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
 - `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
