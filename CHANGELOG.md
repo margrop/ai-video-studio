@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.0 — 2026-08-02
+
+- add capability-aware server-side ProviderRegistry selection;
+- add transport-compatible MiniMax video, Kling, Google Veo, Runway and OpenAI video scaffolds;
+- support vendor-prefixed HTTP adapter configuration without exposing provider controls to jobs;
+- document the boundary between a reusable transport scaffold and a verified vendor adapter.
+
 ## 0.12.0 — 2026-08-02
 
 - add server-owned Asset Library content upload/download endpoints;
