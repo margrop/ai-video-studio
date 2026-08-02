@@ -39,7 +39,7 @@ def create_app(
 ) -> FastAPI:
     job_store = store or FileJobStore.from_env(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.2.0")
+    app = FastAPI(title="AI Video Studio API", version="0.3.0")
 
     @app.get("/", include_in_schema=False)
     @app.get("/dashboard", include_in_schema=False)
