@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 — 2026-08-02
+
+- add server-owned Asset Library content upload/download endpoints;
+- enforce configurable asset byte limits, atomic writes and SHA-256 metadata updates;
+- allow uploaded reference assets to be resolved by shot-based provider workflows.
+
 ## 0.11.0 — 2026-08-02
 
 - enforce 4–15 second contiguous Story Plan shots;

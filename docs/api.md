@@ -45,6 +45,7 @@ worker leases are recovered after a process crash.
 - `GET /v1/publishers` returns explicitly registered publishing adapters.
 - `GET /v1/templates` lists server-owned workflow templates;
 - `GET/POST /v1/assets` manages reusable asset metadata;
+- `PUT/GET /v1/assets/{asset_id}/content` uploads or downloads asset bytes through the server-owned key;
 - `GET/POST /v1/characters` manages reusable character profiles and reference IDs.
 - `GET /v1/jobs/{job_id}/social-drafts` returns the validated draft bundle;
 - `GET/POST /v1/jobs/{job_id}/approvals` reads or appends a human approval decision for one platform.

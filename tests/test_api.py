@@ -45,6 +45,16 @@ def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
         json={"name": "Brand logo", "kind": "logo", "storage_key": "brand/logo.svg"},
     )
     assert asset.status_code == 201
+    uploaded_asset = client.put(
+        f"/v1/assets/{asset.json()['asset_id']}/content",
+        content=b"<svg />",
+        headers={"content-type": "image/svg+xml"},
+    )
+    assert uploaded_asset.status_code == 200
+    assert uploaded_asset.json()["size_bytes"] == 7
+    downloaded_asset = client.get(f"/v1/assets/{asset.json()['asset_id']}/content")
+    assert downloaded_asset.status_code == 200
+    assert downloaded_asset.content == b"<svg />"
     character = client.post(
         "/v1/characters",
         json={
