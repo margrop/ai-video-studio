@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.10.0：
+当前版本是 0.11.0：
 
 ```text
 Markdown / Topic
@@ -35,6 +35,7 @@ Markdown / Topic
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
 - `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
 - 成功任务会生成各平台社交草稿，MCP 可让本地 Agent 一句话调用整条流水线；
+- 60 秒计划默认拆成 8 个约 7.5 秒 Shot；视频 Provider 逐 Shot 生成后再统一合成；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
@@ -176,7 +177,7 @@ pytest
 
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
 - Phase 2：可恢复本地任务队列、Redis/PostgreSQL 多进程队列、幂等、重试、事件、Provider 能力、运维 API、Dashboard、S3/MinIO 产物后端和 PostgreSQL 元数据目录已完成。
-- Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本、通用异步视频传输和 MCP Agent 工具已完成；接下来是各供应商的专用适配器与多镜头素材。
+- Phase 3：Character/Asset/Template catalog、Prompt 一致性、用量账本、通用异步视频传输、MCP Agent 工具和多镜头执行已完成；各供应商的专用适配器仍是扩展工作。
 - Phase 4（当前）：Article → Video → Voice → Social、dry-run、审计和人工审批边界已完成；真实平台发布仍需独立、按平台验证的 Publisher 适配器。
 
 本项目使用 MIT License，详见 [`LICENSE`](LICENSE)。
