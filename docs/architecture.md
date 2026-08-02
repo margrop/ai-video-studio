@@ -63,12 +63,22 @@ Redis shares queue metadata. `ArtifactStore` keeps a local staging boundary and
 can publish generated files to S3/MinIO, while catalogs and approvals still
 need a shared volume until the Postgres catalog adapter lands.
 
+The PostgreSQL job backend uses the same metadata contract with transactional
+row claims. It stores jobs, events, idempotency and usage records; it does not
+store generated media or user-managed catalog files.
+
 With object storage enabled, the runtime boundary is:
 
 ```text
 FastAPI → Redis queue → worker → local staging → S3/MinIO
      ↑                                      ↓
      └──── authenticated artifact stream ───┘
+```
+
+With PostgreSQL metadata, replace the queue segment with:
+
+```text
+FastAPI → PostgreSQL jobs → FOR UPDATE SKIP LOCKED → worker
 ```
 
 ## Provider registry

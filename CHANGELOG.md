@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 — 2026-08-02
+
+- add an optional PostgreSQL JobStore with row-level `SKIP LOCKED` claims;
+- persist job metadata, idempotency, leases, events, retries and terminal usage records in PostgreSQL;
+- add PostgreSQL Compose service, environment configuration, schema bootstrap and offline protocol tests.
+
 ## 0.8.0 — 2026-08-02
 
 - add a provider-neutral artifact store contract with filesystem and S3-compatible backends;

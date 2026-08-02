@@ -22,7 +22,8 @@
 - append-only social draft approval records and Dashboard review controls
 - manual Article → Video GitHub Actions workflow with artifact packaging
 - S3/MinIO-compatible generated artifact storage with authenticated API streaming
-- Postgres catalog/job metadata remains follow-up
+- PostgreSQL job metadata, leases, events, idempotency and usage storage
+- Postgres catalog/approval metadata remains follow-up
 
 ## Phase 3 — foundation completed
 

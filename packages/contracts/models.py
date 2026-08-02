@@ -236,4 +236,4 @@ class SocialApprovalRecord(SocialApprovalRequest):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.8.0"
+    version: str = "0.9.0"

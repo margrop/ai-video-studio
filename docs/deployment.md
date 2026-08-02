@@ -47,10 +47,23 @@ The API and worker must receive the same bucket, region and prefix settings.
 The artifact endpoint remains behind the API key boundary. Keep a shared
 volume for catalogs and approvals until those records move to Postgres.
 
+For PostgreSQL-backed metadata, use the included Compose database or an
+operator-managed PostgreSQL instance:
+
+```dotenv
+AIVS_STORAGE_BACKEND=postgres
+AIVS_POSTGRES_DSN=postgresql://aivs:server-side-password@postgres:5432/aivs
+AIVS_ARTIFACT_BACKEND=s3
+```
+
+The service bootstraps only the AIVS job, event, idempotency and usage tables;
+it does not run destructive migrations or modify unrelated database objects.
+
 ## Production boundary
 
-The filesystem queue is a trusted single-host baseline. Redis and the
-S3-compatible artifact backend are available for multi-process deployments,
+The filesystem queue is a trusted single-host baseline. Redis and PostgreSQL
+are available for multi-process metadata, and the S3-compatible artifact
+backend is available for multi-process deployments,
 but a public deployment still needs authentication, rate limiting,
 cost/concurrency budgets and a retention policy. Do not expose the dashboard,
 Redis or MCP stdio bridge directly to the public internet.
