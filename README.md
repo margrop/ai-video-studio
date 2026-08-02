@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.16.0：
+当前版本是 0.17.0：
 
 ```text
 Markdown / Topic
@@ -45,6 +45,7 @@ Markdown / Topic
 - 任务记录暴露规划、配音、分镜、合成和社交草稿阶段的实时进度；视频 Provider 每完成一个 Shot 都会写入结构化进度事件；
 - 模板有显式版本和默认 Brand Preset；Brand Preset 可统一提示词、片头/片尾/Logo 素材引用，任务只能选择服务端已注册的预设；
 - Provider 生成的分镜会写入 `shot-manifest-v1`；Worker 重试时会按计划、Provider 和 Prompt 指纹复用已成功 Shot，避免重复消耗；
+- Article → Video 支持 `source_url`；远程文章必须匹配服务端 `AIVS_SOURCE_ALLOWED_HOSTS`，Markdown 内容存在时优先使用 Markdown；
 
 没有配置 API Key 时，规划和渲染仍然可以离线运行。这个降级路径用于测试和演示，不代表视频模型或 TTS 已经接通。
 
@@ -63,6 +64,10 @@ aivs generate "用一分钟介绍 MCP" --no-ai --output artifacts/mcp-intro.mp4
 # 从技术文章生成
 aivs generate "AI Gateway 的作用" --source examples/tech-blog.md --no-ai \
   --output artifacts/ai-gateway.mp4
+
+# 远程文章（先配置 AIVS_SOURCE_ALLOWED_HOSTS=example.com）
+aivs generate "文章摘要" --source-url https://example.com/article --no-ai \
+  --output artifacts/article.mp4
 
 # 从 RSS/Atom 新闻条目生成
 aivs rss https://example.com/feed.xml --item 0 --no-ai \
