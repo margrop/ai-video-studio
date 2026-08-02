@@ -16,7 +16,12 @@ from packages.workflow import RenderWorkflow
 def test_offline_workflow_writes_valid_mp4(tmp_path) -> None:
     result = asyncio.run(
         RenderWorkflow(planner=StoryPlanner()).run(
-            CreateJobRequest(topic="Synthetic render", duration_seconds=15, use_ai=False),
+            CreateJobRequest(
+                topic="Synthetic render",
+                duration_seconds=15,
+                use_ai=False,
+                language="en",
+            ),
             tmp_path,
         )
     )
