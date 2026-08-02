@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass
 from importlib.resources import files
@@ -77,8 +78,12 @@ class StoryPlanner:
     ) -> StoryPlan:
         title, source = _clean_source(topic, source_markdown)
         body = source or f"今天用一分钟介绍：{title}。"
-        pieces = _chunks(body, 5) or [body]
-        shot_count = len(pieces)
+        shot_count = max(1, min(12, math.ceil(duration_seconds / 8)))
+        pieces = _chunks(body, shot_count)
+        if not pieces:
+            pieces = [body]
+        while len(pieces) < shot_count:
+            pieces.append(f"继续展示：{title}")
         base_duration = duration_seconds / shot_count
         builder = prompt_builder or self.prompt_builder
         shots: list[Shot] = []
