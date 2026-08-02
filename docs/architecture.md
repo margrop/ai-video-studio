@@ -25,6 +25,14 @@ flowchart TD
 | Subtitle/FFmpeg | deterministic media assembly | infer business content |
 | Storage | job state and artifacts | persist credentials or raw provider responses |
 
+## Reusable content catalogs
+
+`AssetCatalog` stores metadata and operator-imported files below the server-owned
+library root. `CharacterCatalog` stores a stable character prompt, voice and
+reference asset IDs. `TemplateCatalog` reads versioned JSON templates and
+exposes only validated summaries and prompt fields to the workflow. A job may
+reference these IDs, but it cannot submit a raw prompt override or local path.
+
 ## Provider-neutral contract
 
 The current `StoryPlan` is the handoff point shared by future workflows. A video provider can consume each shot's `prompt`, while local FFmpeg can render the same plan as a reviewable slideshow. This keeps the first release useful without pretending that a hosted video model is already configured.

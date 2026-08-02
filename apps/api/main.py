@@ -11,6 +11,10 @@ from fastapi import FastAPI, Header, HTTPException, Query, status
 from fastapi.responses import FileResponse
 
 from packages.contracts.models import (
+    AssetRecord,
+    CharacterRecord,
+    CreateAssetRequest,
+    CreateCharacterRequest,
     CreateJobRequest,
     HealthResponse,
     JobEvent,
@@ -18,7 +22,9 @@ from packages.contracts.models import (
     JobStatsResponse,
     ProviderListResponse,
     ProviderStatus,
+    TemplateSummary,
 )
+from packages.library import CatalogNotFound
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import FileJobStore
 
@@ -31,7 +37,7 @@ def create_app(
     runtime: AppRuntime | None = None,
 ) -> FastAPI:
     job_store = store or FileJobStore.from_env(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
-    app_runtime = runtime or build_runtime()
+    app_runtime = runtime or build_runtime(job_store.root)
     app = FastAPI(title="AI Video Studio API", version="0.2.0")
 
     @app.get("/", include_in_schema=False)
@@ -62,6 +68,15 @@ def create_app(
             Header(alias="Idempotency-Key", max_length=200),
         ] = None,
     ) -> JobRecord:
+        try:
+            app_runtime.templates.get(request.template_id)
+            if (
+                request.character_id is not None
+                and app_runtime.characters.get(request.character_id) is None
+            ):
+                raise CatalogNotFound(f"character is not registered: {request.character_id}")
+        except CatalogNotFound as exc:
+            raise HTTPException(status_code=422, detail="invalid_job_reference") from exc
         return job_store.create(request, idempotency_key=idempotency_key)
 
     @app.get("/v1/jobs", response_model=list[JobRecord])
@@ -104,6 +119,45 @@ def create_app(
                 for descriptor in app_runtime.providers.descriptors()
             ]
         )
+
+    @app.get("/v1/templates", response_model=list[TemplateSummary])
+    async def get_templates() -> list[TemplateSummary]:
+        return app_runtime.templates.list()
+
+    @app.get("/v1/assets", response_model=list[AssetRecord])
+    async def get_assets(limit: int = Query(default=100, ge=1, le=200)) -> list[AssetRecord]:
+        return app_runtime.assets.list(limit=limit)
+
+    @app.post("/v1/assets", response_model=AssetRecord, status_code=status.HTTP_201_CREATED)
+    async def create_asset(request: CreateAssetRequest) -> AssetRecord:
+        return app_runtime.assets.create(request)
+
+    @app.get("/v1/assets/{asset_id}", response_model=AssetRecord)
+    async def get_asset(asset_id: UUID) -> AssetRecord:
+        record = app_runtime.assets.get(asset_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="asset_not_found")
+        return record
+
+    @app.get("/v1/characters", response_model=list[CharacterRecord])
+    async def get_characters(
+        limit: int = Query(default=100, ge=1, le=200),
+    ) -> list[CharacterRecord]:
+        return app_runtime.characters.list(limit=limit)
+
+    @app.post("/v1/characters", response_model=CharacterRecord, status_code=status.HTTP_201_CREATED)
+    async def create_character(request: CreateCharacterRequest) -> CharacterRecord:
+        try:
+            return app_runtime.characters.create(request)
+        except CatalogNotFound as exc:
+            raise HTTPException(status_code=422, detail="invalid_reference_asset") from exc
+
+    @app.get("/v1/characters/{character_id}", response_model=CharacterRecord)
+    async def get_character(character_id: UUID) -> CharacterRecord:
+        record = app_runtime.characters.get(character_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="character_not_found")
+        return record
 
     @app.get("/v1/jobs/{job_id}/artifacts/{artifact_name}")
     async def get_artifact(job_id: UUID, artifact_name: str) -> FileResponse:

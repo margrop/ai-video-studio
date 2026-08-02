@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import PurePosixPath
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -57,7 +58,64 @@ class CreateJobRequest(StrictModel):
     duration_seconds: int = Field(default=60, ge=15, le=180)
     language: str = Field(default="zh-CN", min_length=2, max_length=20)
     voice: str = Field(default="neutral", min_length=1, max_length=100)
+    template_id: str = Field(default="tech-blog-v1", min_length=1, max_length=100)
+    character_id: UUID | None = None
     use_ai: bool = True
+
+
+AssetKind = Literal["image", "audio", "font", "logo", "music", "overlay", "video", "other"]
+
+
+class CreateAssetRequest(StrictModel):
+    name: str = Field(min_length=1, max_length=200)
+    kind: AssetKind
+    storage_key: str | None = Field(default=None, max_length=300)
+    mime_type: str = Field(default="application/octet-stream", max_length=100)
+    tags: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("storage_key")
+    @classmethod
+    def validate_storage_key(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.replace("\\", "/").strip()
+        path = PurePosixPath(normalized)
+        if not normalized or path.is_absolute() or ".." in path.parts:
+            raise ValueError("storage_key must be a relative path without parent traversal")
+        return normalized
+
+
+class AssetRecord(CreateAssetRequest):
+    asset_id: UUID = Field(default_factory=uuid4)
+    size_bytes: int = Field(default=0, ge=0)
+    sha256: str | None = Field(default=None, max_length=64)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class CreateCharacterRequest(StrictModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=1000)
+    prompt: str = Field(min_length=1, max_length=2000)
+    voice: str = Field(default="neutral", min_length=1, max_length=100)
+    language: str = Field(default="zh-CN", min_length=2, max_length=20)
+    reference_asset_ids: list[UUID] = Field(default_factory=list, max_length=12)
+
+
+class CharacterRecord(CreateCharacterRequest):
+    character_id: UUID = Field(default_factory=uuid4)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class TemplateSummary(StrictModel):
+    template_id: str = Field(min_length=1, max_length=100)
+    title_style: str = Field(default="", max_length=200)
+    target_duration_seconds: int = Field(ge=15, le=180)
+    language: str = Field(min_length=2, max_length=20)
+    voice: str = Field(min_length=1, max_length=100)
+    requires_human_approval_before_publish: bool = True
+    allow_external_posting: bool = False
 
 
 class JobRecord(StrictModel):
