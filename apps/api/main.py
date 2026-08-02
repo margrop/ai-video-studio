@@ -67,7 +67,7 @@ def create_app(
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
     generated_artifacts = artifact_store or build_artifact_store(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.11.0")
+    app = FastAPI(title="AI Video Studio API", version="0.12.0")
     approval_store = approval_store or build_approval_store(job_store.root / "approvals")
     audit_store = audit_store or build_audit_store(job_store.root / "publish-audit")
     publishing_service = PublishingService(
@@ -220,6 +220,45 @@ def create_app(
         if record is None:
             raise HTTPException(status_code=404, detail="asset_not_found")
         return record
+
+    @app.put("/v1/assets/{asset_id}/content", response_model=AssetRecord)
+    async def upload_asset_content(asset_id: UUID, http_request: Request) -> AssetRecord:
+        record = app_runtime.assets.get(asset_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="asset_not_found")
+        try:
+            max_bytes = int(os.getenv("AIVS_MAX_ASSET_BYTES", str(50 * 1024 * 1024)))
+        except ValueError:
+            max_bytes = 50 * 1024 * 1024
+        content_length = http_request.headers.get("content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > max_bytes:
+                    raise HTTPException(status_code=413, detail="asset_too_large")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="invalid_content_length") from None
+        content = await http_request.body()
+        if len(content) > max_bytes:
+            raise HTTPException(status_code=413, detail="asset_too_large")
+        mime_type = http_request.headers.get("content-type", "").split(";", 1)[0].strip()
+        try:
+            return app_runtime.assets.write_bytes(
+                asset_id,
+                content,
+                mime_type=mime_type or None,
+            )
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail="asset_write_failed") from exc
+
+    @app.get("/v1/assets/{asset_id}/content")
+    async def download_asset_content(asset_id: UUID) -> FileResponse:
+        record = app_runtime.assets.get(asset_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="asset_not_found")
+        path = app_runtime.assets.local_path(asset_id)
+        if path is None:
+            raise HTTPException(status_code=404, detail="asset_content_not_found")
+        return FileResponse(path, media_type=record.mime_type, filename=path.name)
 
     @app.get("/v1/characters", response_model=list[CharacterRecord])
     async def get_characters(
