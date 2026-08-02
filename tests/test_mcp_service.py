@@ -31,3 +31,19 @@ def test_worker_emits_social_draft_artifact_for_agent_jobs(tmp_path) -> None:
 
     assert inspected["job"]["status"] == "succeeded"
     assert "social-drafts.json" in inspected["artifacts"]
+
+
+def test_agent_publish_tool_is_dry_run_by_default(tmp_path) -> None:
+    store = FileJobStore(tmp_path / "state")
+    runtime = build_runtime(store.root)
+    service = AIVSToolService(store=store, runtime=runtime)
+    record = store.create(
+        CreateJobRequest(topic="Agent publish preview", use_ai=False, duration_seconds=15)
+    )
+
+    assert asyncio.run(process_once(store, runtime)) is True
+    result = asyncio.run(service.publish_social_draft(job_id=str(record.job_id), platform="wechat"))
+
+    assert result["status"] == "dry_run"
+    assert result["dry_run"] is True
+    assert service.list_publish_audit(str(record.job_id))[0]["action"] == "publish_dry_run"
