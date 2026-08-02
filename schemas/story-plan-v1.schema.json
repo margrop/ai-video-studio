@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aivs.example.invalid/schemas/story-plan-v1.schema.json",
+  "title": "AI Video Studio Story Plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plan_id", "title", "summary", "language", "voice", "target_duration_seconds", "narration", "shots", "warnings"],
+  "properties": {
+    "schema_version": {"const": "story-plan-v1"},
+    "plan_id": {"type": "string", "format": "uuid"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "language": {"type": "string", "minLength": 2, "maxLength": 20},
+    "voice": {"type": "string", "minLength": 1, "maxLength": 100},
+    "target_duration_seconds": {"type": "integer", "minimum": 15, "maximum": 180},
+    "narration": {"type": "string", "minLength": 1, "maxLength": 12000},
+    "warnings": {"type": "array", "maxItems": 20, "items": {"type": "string", "maxLength": 500}},
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "start_seconds", "duration_seconds", "narration", "visual", "camera", "prompt"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "maxLength": 64},
+          "start_seconds": {"type": "number", "minimum": 0, "maximum": 3600},
+          "duration_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 180},
+          "narration": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "visual": {"type": "string", "minLength": 1, "maxLength": 1000},
+          "camera": {"type": "string", "maxLength": 300},
+          "prompt": {"type": "string", "maxLength": 4000}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+"""Render a provider-neutral plan into a small, reviewable MP4 artifact."""
+
+from __future__ import annotations
+
+import asyncio
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+from packages.contracts.models import StoryPlan
+
+
+class FFmpegError(RuntimeError):
+    """FFmpeg is unavailable or refused a render."""
+
+
+class FFmpegRenderer:
+    def __init__(self, *, ffmpeg_binary: str = "ffmpeg") -> None:
+        self.ffmpeg_binary = ffmpeg_binary
+
+    def _require_ffmpeg(self) -> None:
+        if shutil.which(self.ffmpeg_binary) is None:
+            raise FFmpegError(f"{self.ffmpeg_binary} was not found in PATH")
+
+    def _run(self, args: list[str]) -> None:
+        try:
+            completed = subprocess.run(
+                args,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+        except FileNotFoundError as exc:
+            raise FFmpegError(f"{self.ffmpeg_binary} was not found in PATH") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise FFmpegError("FFmpeg render timed out") from exc
+        except subprocess.CalledProcessError as exc:
+            # Do not expose a full command line or arbitrary provider text in
+            # API errors. Keep only a short, non-secret diagnostic.
+            detail = (exc.stderr or "").strip().splitlines()[-1:]
+            raise FFmpegError(f"FFmpeg failed: {' '.join(detail)[:300]}") from exc
+        _ = completed
+
+    def render_slideshow(
+        self,
+        *,
+        plan: StoryPlan,
+        output_path: Path,
+        audio_path: Path | None = None,
+    ) -> Path:
+        self._require_ffmpeg()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="aivs-render-") as temp_dir:
+            workspace = Path(temp_dir)
+            segment_paths: list[Path] = []
+            palette = ["16213e", "0f3460", "533483", "1b5e20", "7b341e"]
+            for index, shot in enumerate(plan.shots):
+                text_path = workspace / f"shot-{index:02d}.txt"
+                text_path.write_text(f"{plan.title}\n\n{shot.visual}", encoding="utf-8")
+                segment = workspace / f"segment-{index:02d}.mp4"
+                segment_paths.append(segment)
+                drawtext = (
+                    f"drawtext=fontcolor=white:fontsize=46:line_spacing=12:"
+                    f"textfile={text_path}:x=(w-text_w)/2:y=(h-text_h)/2"
+                )
+                self._run(
+                    [
+                        self.ffmpeg_binary,
+                        "-y",
+                        "-f",
+                        "lavfi",
+                        "-i",
+                        (
+                            f"color=c=0x{palette[index % len(palette)]}:"
+                            f"s=1080x1920:r=30:d={shot.duration_seconds}"
+                        ),
+                        "-vf",
+                        drawtext,
+                        "-an",
+                        "-c:v",
+                        "libx264",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-movflags",
+                        "+faststart",
+                        str(segment),
+                    ]
+                )
+
+            concat_file = workspace / "concat.txt"
+            concat_file.write_text(
+                "\n".join(f"file '{segment.as_posix()}'" for segment in segment_paths),
+                encoding="utf-8",
+            )
+            silent_video = workspace / "video.mp4"
+            self._run(
+                [
+                    self.ffmpeg_binary,
+                    "-y",
+                    "-f",
+                    "concat",
+                    "-safe",
+                    "0",
+                    "-i",
+                    str(concat_file),
+                    "-c",
+                    "copy",
+                    str(silent_video),
+                ]
+            )
+            if audio_path is None:
+                shutil.copyfile(silent_video, output_path)
+            else:
+                self._run(
+                    [
+                        self.ffmpeg_binary,
+                        "-y",
+                        "-i",
+                        str(silent_video),
+                        "-i",
+                        str(audio_path),
+                        "-filter_complex",
+                        "[1:a]apad[audio]",
+                        "-map",
+                        "0:v:0",
+                        "-map",
+                        "[audio]",
+                        "-t",
+                        str(plan.target_duration_seconds),
+                        "-c:v",
+                        "copy",
+                        "-c:a",
+                        "aac",
+                        "-movflags",
+                        "+faststart",
+                        str(output_path),
+                    ]
+                )
+        return output_path
+
+    async def render_slideshow_async(
+        self,
+        *,
+        plan: StoryPlan,
+        output_path: Path,
+        audio_path: Path | None = None,
+    ) -> Path:
+        return await asyncio.to_thread(
+            self.render_slideshow,
+            plan=plan,
+            output_path=output_path,
+            audio_path=audio_path,
+        )
