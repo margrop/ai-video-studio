@@ -10,6 +10,7 @@ from .artifacts import (
 )
 from .factory import build_job_store
 from .jobs import FileJobStore
+from .postgres import PostgresJobStore, PostgresUsageLedger
 from .protocols import JobStore
 from .redis import RedisJobStore, RedisUsageLedger
 from .usage import UsageLedger
@@ -21,6 +22,8 @@ __all__ = [
     "ArtifactStoreError",
     "FilesystemArtifactStore",
     "JobStore",
+    "PostgresJobStore",
+    "PostgresUsageLedger",
     "RedisJobStore",
     "RedisUsageLedger",
     "S3ArtifactStore",

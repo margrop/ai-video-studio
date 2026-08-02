@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from packages.storage.jobs import FileJobStore
+from packages.storage.postgres import PostgresJobStore
 from packages.storage.protocols import JobStore
 from packages.storage.redis import RedisJobStore
 
@@ -18,4 +19,6 @@ def build_job_store(root: Path | None = None) -> JobStore:
         return FileJobStore.from_env(root)
     if backend == "redis":
         return RedisJobStore.from_env(root)
-    raise ValueError("AIVS_STORAGE_BACKEND must be filesystem or redis")
+    if backend in {"postgres", "postgresql"}:
+        return PostgresJobStore.from_env(root)
+    raise ValueError("AIVS_STORAGE_BACKEND must be filesystem, redis or postgres")

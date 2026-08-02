@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.8.0：
+当前版本是 0.9.0：
 
 ```text
 Markdown / Topic
@@ -21,6 +21,7 @@ Markdown / Topic
 - `aivs plan` 单独生成版本化 `story-plan-v1`；
 - FastAPI 接受任务，文件队列 worker 处理任务；
 - 可通过 `AIVS_STORAGE_BACKEND=redis` 切换到 Redis 多进程队列，默认仍是离线文件队列；
+- 可通过 `AIVS_STORAGE_BACKEND=postgres` 切换到 PostgreSQL 元数据队列，使用行锁安全支持多 Worker；
 - 可通过 `AIVS_ARTIFACT_BACKEND=s3` 把生成产物上传到 AWS S3、MinIO 或其他 S3-compatible 存储，API 会继续通过受保护的下载接口提供产物；
 - 配置 `AIVS_API_KEY` 后，所有 `/v1` API 使用服务端 API Key 鉴权并启用限流；
 - Dashboard 可对社交草稿逐平台留下通过/驳回记录，系统不会绕过人工审批自动发布；
@@ -133,7 +134,7 @@ packages/
 ├── subtitle/  # SRT
 ├── tts/       # TTS 接口与实现
 ├── ffmpeg/    # 确定性视频合成
-├── storage/   # 文件/Redis 任务状态与 S3/MinIO 产物存储
+├── storage/   # 文件/Redis/PostgreSQL 任务状态与 S3/MinIO 产物存储
 └── workflow/  # 内容流水线编排
 providers/
 ├── minimax/   # MiniMax H3 / TTS 适配器
@@ -170,7 +171,7 @@ pytest
 ## 路线图
 
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
-- Phase 2：可恢复本地任务队列、Redis 多进程队列、幂等、重试、事件、Provider 能力、运维 API、Dashboard 和 S3/MinIO 产物后端已完成；Postgres 元数据仍待接入。
+- Phase 2：可恢复本地任务队列、Redis/PostgreSQL 多进程队列、幂等、重试、事件、Provider 能力、运维 API、Dashboard 和 S3/MinIO 产物后端已完成；Asset/Character/Approval 目录的数据库化仍待接入。
 - Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本和通用异步视频传输已完成；接下来是各供应商的专用适配器与多镜头素材。
 - Phase 4（当前）：可选 MCP Server、社交草稿和 Docker/CI 基线；真实平台发布仍需独立适配器与人工审批。
 

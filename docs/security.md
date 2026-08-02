@@ -26,8 +26,8 @@
 - The public repository contains no real credential, private media, or production endpoint.
 
 Before enabling a hosted provider, add server-side authentication, rate limits,
-cost budgets, concurrency limits and an explicit retention policy. Redis mode
-shares queue metadata across processes. S3 mode protects generated artifact
+cost budgets, concurrency limits and an explicit retention policy. Redis and
+PostgreSQL modes share queue metadata across processes. S3 mode protects generated artifact
 delivery through the API boundary, while catalog and approval files still need
 a shared volume until their database adapter lands.
 Never expose Redis, the dashboard or the MCP stdio bridge directly to the

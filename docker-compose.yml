@@ -8,6 +8,7 @@ services:
       AIVS_STORAGE_ROOT: /data/.aivs
       AIVS_REDIS_URL: ${AIVS_REDIS_URL:-redis://redis:6379/0}
       AIVS_REDIS_NAMESPACE: ${AIVS_REDIS_NAMESPACE:-aivs}
+      AIVS_POSTGRES_DSN: ${AIVS_POSTGRES_DSN:-postgresql://aivs:aivs-dev-only@postgres:5432/aivs}
       AIVS_ARTIFACT_BACKEND: ${AIVS_ARTIFACT_BACKEND:-filesystem}
       AIVS_S3_ENDPOINT_URL: ${AIVS_S3_ENDPOINT_URL:-}
       AIVS_S3_BUCKET: ${AIVS_S3_BUCKET:-aivs}
@@ -33,6 +34,9 @@ services:
       AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS: ${AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS:-}
     volumes:
       - aivs_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   worker:
     build: .
@@ -42,6 +46,7 @@ services:
       AIVS_STORAGE_ROOT: /data/.aivs
       AIVS_REDIS_URL: ${AIVS_REDIS_URL:-redis://redis:6379/0}
       AIVS_REDIS_NAMESPACE: ${AIVS_REDIS_NAMESPACE:-aivs}
+      AIVS_POSTGRES_DSN: ${AIVS_POSTGRES_DSN:-postgresql://aivs:aivs-dev-only@postgres:5432/aivs}
       AIVS_ARTIFACT_BACKEND: ${AIVS_ARTIFACT_BACKEND:-filesystem}
       AIVS_S3_ENDPOINT_URL: ${AIVS_S3_ENDPOINT_URL:-}
       AIVS_S3_BUCKET: ${AIVS_S3_BUCKET:-aivs}
@@ -64,6 +69,9 @@ services:
       AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS: ${AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS:-}
     volumes:
       - aivs_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -71,6 +79,21 @@ services:
     volumes:
       - redis_data:/data
 
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${AIVS_POSTGRES_USER:-aivs}
+      POSTGRES_PASSWORD: ${AIVS_POSTGRES_PASSWORD:-aivs-dev-only}
+      POSTGRES_DB: ${AIVS_POSTGRES_DB:-aivs}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 volumes:
   aivs_data:
   redis_data:
+  postgres_data:

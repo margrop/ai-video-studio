@@ -1,12 +1,13 @@
 # Storage backends
 
-AI Video Studio supports two job-store modes selected by the service-owned
+AI Video Studio supports three job-store modes selected by the service-owned
 `AIVS_STORAGE_BACKEND` setting:
 
 | Backend | Default | Intended use | State location |
 |---|---:|---|---|
 | `filesystem` | yes | offline development and one trusted host | `.aivs/` |
 | `redis` | no | multiple API/worker processes | Redis plus shared artifact root |
+| `postgres` | no | multiple hosts with transactional metadata | PostgreSQL plus artifact backend |
 
 Both backends implement the same job contract: idempotency keys, bounded
 retries, worker leases, crash recovery, event streams, terminal usage records
@@ -38,9 +39,35 @@ SHA-256 fingerprints rather than raw request keys.
 options. Keep Redis on a private network; do not expose the Redis port or the
 MCP stdio bridge to the public internet.
 
+## PostgreSQL mode
+
+PostgreSQL stores job metadata, idempotency hashes, worker leases, event
+records, retry state and terminal usage records. Claims use a transaction with
+`FOR UPDATE SKIP LOCKED`, allowing multiple workers to safely claim different
+jobs without a separate queue service. The schema is created idempotently when
+the backend starts.
+
+Install the optional client and configure the same DSN for every API and worker:
+
+```bash
+python -m pip install -e '.[dev,postgres]'
+export AIVS_STORAGE_BACKEND=postgres
+export AIVS_POSTGRES_DSN=postgresql://aivs:replace-with-local-password@127.0.0.1:5432/aivs
+
+uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
+aivs-worker
+```
+
+PostgreSQL is metadata storage, not media storage. Keep
+`AIVS_ARTIFACT_BACKEND=s3` for separate API/worker hosts, or use the default
+filesystem artifact backend with a shared volume. Asset/Character catalogs and
+approval records remain below `AIVS_STORAGE_ROOT` until their database adapter
+is implemented.
+
 ## Files and multi-host deployments
 
-Redis stores job metadata, queue state, events and usage records. Asset and
+Redis and PostgreSQL store job metadata, queue state, events and usage records.
+Asset and
 Character catalogs, approval records and the worker's temporary staging files
 remain below `AIVS_STORAGE_ROOT`. Generated MP4/SRT/audio/plan files can use the
 artifact backend described below.
