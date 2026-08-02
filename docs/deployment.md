@@ -20,6 +20,9 @@ more than one API/worker process, set:
 AIVS_STORAGE_BACKEND=redis
 AIVS_REDIS_URL=redis://redis:6379/0
 AIVS_REDIS_NAMESPACE=aivs
+AIVS_API_KEY=replace-with-a-long-random-secret
+AIVS_RATE_LIMIT_PER_MINUTE=120
+AIVS_RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 The included Redis service persists its append-only data in `redis_data`.
@@ -35,3 +38,7 @@ authentication, rate limiting, cost/concurrency budgets and a retention policy.
 For separate hosts, move asset/artifact storage to a retention-controlled
 object store. Do not expose the dashboard, Redis or MCP stdio bridge directly
 to the public internet.
+
+`/health` is intentionally unauthenticated for liveness probes. Configure the
+API key before exposing `/v1` or serving the dashboard through a public proxy;
+see [`security.md`](security.md) for the client header contract.

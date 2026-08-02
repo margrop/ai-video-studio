@@ -220,4 +220,4 @@ class SocialDraftBundle(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.4.0"
+    version: str = "0.5.0"
