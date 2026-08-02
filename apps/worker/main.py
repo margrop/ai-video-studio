@@ -10,6 +10,7 @@ import typer
 
 from packages.library import CatalogNotFound
 from packages.providers import VideoProviderError
+from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import FileJobStore
 
@@ -41,6 +42,8 @@ async def process_once(store: FileJobStore, runtime: AppRuntime | None = None) -
         record.subtitle_path = result.subtitle_path.name
         record.audio_path = result.audio_path.name
         record.video_path = result.video_path.name
+        social_path = write_social_drafts(result.plan, output_dir / "social-drafts.json")
+        record.social_drafts_path = social_path.name
     except CatalogNotFound as exc:
         store.fail(
             record,

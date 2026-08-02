@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      AIVS_STORAGE_ROOT: /data/.aivs
+      AIVS_LLM_BASE_URL: ${AIVS_LLM_BASE_URL:-}
+      AIVS_LLM_API_KEY: ${AIVS_LLM_API_KEY:-}
+      AIVS_LLM_MODEL: ${AIVS_LLM_MODEL:-}
+      AIVS_TTS_BASE_URL: ${AIVS_TTS_BASE_URL:-}
+      AIVS_TTS_API_KEY: ${AIVS_TTS_API_KEY:-}
+      AIVS_TTS_MODEL: ${AIVS_TTS_MODEL:-}
+      AIVS_VIDEO_PROVIDER: ${AIVS_VIDEO_PROVIDER:-}
+      AIVS_VIDEO_BASE_URL: ${AIVS_VIDEO_BASE_URL:-}
+      AIVS_VIDEO_API_KEY: ${AIVS_VIDEO_API_KEY:-}
+      AIVS_VIDEO_MODEL: ${AIVS_VIDEO_MODEL:-}
+    volumes:
+      - aivs_data:/data
+
+  worker:
+    build: .
+    command: ["aivs-worker", "--storage-root", "/data/.aivs"]
+    environment:
+      AIVS_STORAGE_ROOT: /data/.aivs
+      AIVS_LLM_BASE_URL: ${AIVS_LLM_BASE_URL:-}
+      AIVS_LLM_API_KEY: ${AIVS_LLM_API_KEY:-}
+      AIVS_LLM_MODEL: ${AIVS_LLM_MODEL:-}
+      AIVS_TTS_BASE_URL: ${AIVS_TTS_BASE_URL:-}
+      AIVS_TTS_API_KEY: ${AIVS_TTS_API_KEY:-}
+      AIVS_TTS_MODEL: ${AIVS_TTS_MODEL:-}
+      AIVS_VIDEO_PROVIDER: ${AIVS_VIDEO_PROVIDER:-}
+      AIVS_VIDEO_BASE_URL: ${AIVS_VIDEO_BASE_URL:-}
+      AIVS_VIDEO_API_KEY: ${AIVS_VIDEO_API_KEY:-}
+      AIVS_VIDEO_MODEL: ${AIVS_VIDEO_MODEL:-}
+    volumes:
+      - aivs_data:/data
+
+volumes:
+  aivs_data:

@@ -25,6 +25,7 @@ Markdown / Topic
 - `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
 - `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
+- 成功任务会生成各平台社交草稿，MCP 可让本地 Agent 一句话调用整条流水线；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
@@ -162,6 +163,6 @@ pytest
 - Phase 1：FastAPI、worker、CLI、H3 planner、TTS 接口和 FFmpeg。
 - Phase 2：可恢复本地任务队列、幂等、重试、事件、Provider 能力、运维 API 和 Dashboard 已完成；Redis/Postgres 仍待接入。
 - Phase 3（当前）：Character/Asset/Template catalog、Prompt 一致性、用量账本和通用异步视频传输已完成；接下来是各供应商的专用适配器与多镜头素材。
-- Phase 4：MCP Server、博客/公众号/知乎/B 站等发布 Workflow。
+- Phase 4（当前）：可选 MCP Server、社交草稿和 Docker/CI 基线；真实平台发布仍需独立适配器与人工审批。
 
 本项目使用 MIT License，详见 [`LICENSE`](LICENSE)。

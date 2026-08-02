@@ -65,7 +65,7 @@ async function openDetail(jobId) {
   $("detail-title").textContent = job.request.topic;
   $("detail-meta").innerHTML = `<span class="status ${escapeHtml(job.status)}">${statusLabel(job.status)}</span><span>尝试 ${job.attempt}/${job.max_attempts}</span><span>创建于 ${formatDate(job.created_at)}</span>${job.error_message ? `<span class="error-text">${escapeHtml(job.error_code)}: ${escapeHtml(job.error_message)}</span>` : ""}`;
   $("events").innerHTML = events.map((event) => `<li><span class="event-type">${escapeHtml(event.event_type)}</span><span>${escapeHtml(event.message)}</span><time>${formatDate(event.created_at)}</time></li>`).join("") || '<li class="muted">暂无事件</li>';
-  const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"]];
+  const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"], ["social-drafts.json", "社交草稿"]];
   $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<a class="artifact" href="/v1/jobs/${jobId}/artifacts/${name}" target="_blank" rel="noreferrer">${label}<span>下载 ↗</span></a>`).join("") : '<p class="muted">任务成功后可下载产物</p>';
   $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
 }
