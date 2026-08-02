@@ -50,6 +50,21 @@ class _JsonStore:
             if temporary.exists():
                 temporary.unlink()
 
+    @staticmethod
+    def _atomic_write_bytes(path: Path, content: bytes) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            Path(temporary_name).replace(path)
+        finally:
+            temporary = Path(temporary_name)
+            if temporary.exists():
+                temporary.unlink()
+
 
 class AssetCatalog(_JsonStore):
     def __init__(self, root: Path) -> None:
@@ -78,6 +93,30 @@ class AssetCatalog(_JsonStore):
         if self.files_dir.resolve() not in candidate.parents or not candidate.is_file():
             return None
         return candidate
+
+    def write_bytes(
+        self,
+        asset_id: UUID,
+        content: bytes,
+        *,
+        mime_type: str | None = None,
+    ) -> AssetRecord:
+        """Store bytes at the record-owned key and update integrity metadata."""
+
+        record = self.get(asset_id)
+        if record is None:
+            raise CatalogNotFound(f"asset is not registered: {asset_id}")
+        if record.storage_key is None:
+            record.storage_key = f"{record.kind}/{record.asset_id}"
+        destination = (self.files_dir / record.storage_key).resolve()
+        if self.files_dir.resolve() not in destination.parents:
+            raise ValueError("asset destination escapes the asset root")
+        self._atomic_write_bytes(destination, content)
+        record.size_bytes = len(content)
+        record.sha256 = hashlib.sha256(content).hexdigest()
+        if mime_type:
+            record.mime_type = mime_type[:100]
+        return self._save(record)
 
     def create(self, request: CreateAssetRequest) -> AssetRecord:
         record = AssetRecord(**request.model_dump())
