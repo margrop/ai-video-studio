@@ -26,6 +26,27 @@ class Shot(StrictModel):
     prompt: str = Field(default="", max_length=4000)
 
 
+ShotRenderStatus = Literal["pending", "running", "succeeded", "failed"]
+
+
+class ShotRenderRecord(StrictModel):
+    shot_id: str = Field(min_length=1, max_length=64)
+    index: int = Field(ge=1, le=30)
+    duration_seconds: int = Field(ge=4, le=15)
+    prompt_sha256: str = Field(min_length=64, max_length=64)
+    status: ShotRenderStatus = "pending"
+    output_path: str = Field(min_length=1, max_length=200)
+    error_message: str = Field(default="", max_length=300)
+
+
+class ShotManifest(StrictModel):
+    schema_version: Literal["shot-manifest-v1"] = "shot-manifest-v1"
+    plan_fingerprint: str = Field(min_length=64, max_length=64)
+    provider_id: str = Field(min_length=1, max_length=100)
+    shots: list[ShotRenderRecord] = Field(min_length=1, max_length=30)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 class StoryPlan(StrictModel):
     """The shared output of planning, independent of a video provider."""
 
@@ -370,4 +391,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.15.0"
+    version: str = "0.16.0"
