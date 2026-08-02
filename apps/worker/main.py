@@ -18,6 +18,28 @@ from packages.workflow import SourceError
 app = typer.Typer(add_completion=False, help="Process AI Video Studio render jobs.")
 
 
+def _reference_asset_urls(asset_ids: list[object]) -> tuple[str, ...]:
+    """Resolve catalog IDs through an operator-owned public URL template.
+
+    MiniMax H3 fetches reference media from public URLs. The template must
+    point to a CDN, signed object URL service or another deliberately public
+    asset endpoint; it must not expose local filesystem paths or secrets.
+    """
+
+    template = os.getenv("AIVS_ASSET_PUBLIC_URL_TEMPLATE", "").strip()
+    if not template:
+        return ()
+    urls: list[str] = []
+    for asset_id in asset_ids:
+        try:
+            url = template.format(asset_id=str(asset_id))
+        except (KeyError, ValueError):
+            return ()
+        if url.startswith(("https://", "http://")):
+            urls.append(url)
+    return tuple(urls)
+
+
 async def process_once(
     store: JobStore,
     runtime: AppRuntime | None = None,
@@ -32,6 +54,7 @@ async def process_once(
     try:
         character_prompt = ""
         reference_images: list[Path] = []
+        reference_image_urls: tuple[str, ...] = ()
         if record.request.character_id is not None:
             character = app_runtime.characters.get(record.request.character_id)
             if character is None:
@@ -42,6 +65,7 @@ async def process_once(
                 for asset_id in character.reference_asset_ids
                 if (path := app_runtime.assets.local_path(asset_id)) is not None
             ]
+            reference_image_urls = _reference_asset_urls(character.reference_asset_ids)
         prompt_config = app_runtime.templates.prompt_config(
             record.request.template_id,
             record.request.brand_preset_id,
@@ -68,6 +92,7 @@ async def process_once(
             output_dir,
             character_prompt=character_prompt,
             reference_images=tuple(reference_images),
+            reference_image_urls=reference_image_urls,
             prompt_config=prompt_config,
             progress_callback=report_progress,
         )
