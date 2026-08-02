@@ -41,6 +41,7 @@
 - explicit Template versions and server-owned Brand Presets are available to
   the API, CLI, MCP and Dashboard
 - provider Shot Manifests support safe per-shot retry reuse and inspection
+- allowlisted remote Article sources feed the same planner contract as Markdown
 
 ## Phase 4 — foundation completed
 

@@ -195,6 +195,7 @@ $("job-form").addEventListener("submit", async (event) => {
   const request = {
     topic: $("topic").value,
     source_markdown: $("source").value,
+    source_url: $("source-url").value.trim() || null,
     duration_seconds: Number($("duration").value),
     language: $("language").value,
     voice: $("voice").value,

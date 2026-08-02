@@ -65,6 +65,7 @@ class AIVSToolService:
         *,
         topic: str,
         source_markdown: str = "",
+        source_url: str | None = None,
         duration_seconds: int = 60,
         language: str = "zh-CN",
         voice: str = "neutral",
@@ -77,6 +78,7 @@ class AIVSToolService:
         request = CreateJobRequest(
             topic=topic,
             source_markdown=source_markdown,
+            source_url=source_url,
             duration_seconds=duration_seconds,
             language=language,
             voice=voice,

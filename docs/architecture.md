@@ -79,6 +79,12 @@ worker adds the social-draft milestone before the terminal success transition.
 Progress is metadata, not a client-controlled command, and shot updates also
 appear as safe `progress` events for operators and Agents.
 
+Article sources follow the same boundary: Markdown is already in the job
+contract, while `source_url` is fetched only through the allowlisted workflow
+source adapter. The adapter rejects embedded credentials, non-public IP
+literals, disallowed redirects and oversized/non-text responses before the
+planner receives article text.
+
 Provider-backed renders also maintain a server-owned `shot-manifest-v1` in the
 job staging directory. Each entry records the prompt hash, rounded duration,
 Provider ID and state. A retry reuses only a succeeded entry whose generated

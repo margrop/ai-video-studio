@@ -22,6 +22,7 @@ def create_server(service: AIVSToolService | None = None):
     async def generate_video(
         topic: str,
         source_markdown: str = "",
+        source_url: str | None = None,
         duration_seconds: int = 60,
         language: str = "zh-CN",
         voice: str = "neutral",
@@ -36,6 +37,7 @@ def create_server(service: AIVSToolService | None = None):
         return await tool_service.generate_video(
             topic=topic,
             source_markdown=source_markdown,
+            source_url=source_url,
             duration_seconds=duration_seconds,
             language=language,
             voice=voice,

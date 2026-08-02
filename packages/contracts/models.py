@@ -78,6 +78,7 @@ class StoryPlan(StrictModel):
 class CreateJobRequest(StrictModel):
     topic: str = Field(min_length=1, max_length=500)
     source_markdown: str = Field(default="", max_length=30000)
+    source_url: str | None = Field(default=None, max_length=2000)
     duration_seconds: int = Field(default=60, ge=15, le=180)
     language: str = Field(default="zh-CN", min_length=2, max_length=20)
     voice: str = Field(default="neutral", min_length=1, max_length=100)
@@ -391,4 +392,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.16.0"
+    version: str = "0.17.0"
