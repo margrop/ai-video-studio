@@ -27,6 +27,9 @@ def test_asset_and_character_catalogs_keep_reusable_server_owned_records(tmp_pat
     )
 
     assert assets.get(asset.asset_id).sha256 is not None
+    updated = assets.write_bytes(asset.asset_id, b"<svg />", mime_type="image/svg+xml")
+    assert updated.size_bytes == 7
+    assert updated.mime_type == "image/svg+xml"
     assert (
         assets.local_path(asset.asset_id)
         == (tmp_path / "assets" / "files" / "brand" / "logo.svg").resolve()
