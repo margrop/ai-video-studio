@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.2 — 2026-08-02
+
+- update macOS setup to use Homebrew's keg-only `ffmpeg-full` formula;
+- document FFmpeg 8's libfreetype and libharfbuzz requirements for `drawtext`;
+- replace the ineffective `brew reinstall ffmpeg` remediation message.
+
 ## 0.18.1 — 2026-08-02
 
 - detect missing FFmpeg `drawtext` support before offline slideshow rendering;
