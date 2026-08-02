@@ -23,6 +23,7 @@ from packages.providers import VideoProvider
 from packages.storyboard import PromptBuilder
 from packages.subtitle import write_srt
 from packages.tts import SilentTTSProvider, TTSProvider
+from packages.workflow.sources import fetch_article
 
 
 class ProgressCallback(Protocol):
@@ -190,10 +191,14 @@ class RenderWorkflow:
             stage="planning",
             message="正在生成 Story Plan",
         )
+        source_markdown = request.source_markdown
+        if not source_markdown and request.source_url:
+            article = await fetch_article(request.source_url)
+            source_markdown = article.body
         prompt_builder = PromptBuilder.from_config(prompt_config) if prompt_config else None
         result = await self.planner.plan(
             topic=request.topic,
-            source_markdown=request.source_markdown,
+            source_markdown=source_markdown,
             duration_seconds=request.duration_seconds,
             language=request.language,
             voice=request.voice,
