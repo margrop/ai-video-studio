@@ -58,6 +58,7 @@ worker leases are recovered after a process crash.
 - `GET /v1/providers` returns configured capability metadata without secrets.
 - `GET /v1/publishers` returns explicitly registered publishing adapters.
 - `GET /v1/templates` lists server-owned workflow templates;
+- `GET /v1/brand-presets` lists versioned server-owned visual identity presets;
 - `GET/POST /v1/assets` manages reusable asset metadata;
 - `PUT/GET /v1/assets/{asset_id}/content` uploads or downloads asset bytes through the server-owned key;
 - `GET/POST /v1/characters` manages reusable character profiles and reference IDs.
@@ -66,9 +67,15 @@ worker leases are recovered after a process crash.
 - `GET /v1/jobs/{job_id}/publish-audit` returns safe publish audit events;
 - `POST /v1/jobs/{job_id}/publish` previews by default and requires the latest human approval for an external attempt.
 
-`POST /v1/jobs` accepts `template_id` and an optional `character_id`. Both are
-resolved against server-owned catalogs; a client cannot submit an arbitrary
-Prompt Builder configuration or filesystem path.
+`POST /v1/jobs` accepts `template_id`, an optional `brand_preset_id` and an
+optional `character_id`. All three are resolved against server-owned catalogs;
+a client cannot submit an arbitrary Prompt Builder configuration or filesystem
+path. Omitting `brand_preset_id` uses the selected template's default.
+
+Brand Presets expose a version, deterministic prompt layers and optional
+`logo_asset_id`, `intro_asset_id` and `outro_asset_id` references. The current
+render boundary records these reusable references and applies the prompt
+layers; platform-specific media overlays remain a renderer extension.
 
 When `AIVS_VIDEO_PROVIDER`, `AIVS_VIDEO_BASE_URL`, `AIVS_VIDEO_API_KEY` and
 `AIVS_VIDEO_MODEL` are configured, the worker can use the generic asynchronous
