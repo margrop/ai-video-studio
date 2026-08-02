@@ -176,6 +176,7 @@ def create_app(
             "story-plan.json": "plan_path",
             "subtitles.srt": "subtitle_path",
             "narration.wav": "audio_path",
+            "social-drafts.json": "social_drafts_path",
         }
         if artifact_name not in allowed:
             raise HTTPException(status_code=404, detail="artifact_not_found")
@@ -183,7 +184,13 @@ def create_app(
         artifact_path = artifact_dir / artifact_name
         if not artifact_path.is_file():
             raise HTTPException(status_code=404, detail="artifact_not_found")
-        media_type = "video/mp4" if artifact_name.endswith(".mp4") else "application/octet-stream"
+        media_type = (
+            "video/mp4"
+            if artifact_name.endswith(".mp4")
+            else "application/json"
+            if artifact_name.endswith(".json")
+            else "application/octet-stream"
+        )
         return FileResponse(artifact_path, media_type=media_type, filename=artifact_name)
 
     app.state.job_store = job_store

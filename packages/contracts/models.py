@@ -132,6 +132,7 @@ class JobRecord(StrictModel):
     subtitle_path: str | None = None
     audio_path: str | None = None
     video_path: str | None = None
+    social_drafts_path: str | None = None
     error_code: str | None = None
     error_message: str | None = None
 
@@ -188,6 +189,32 @@ class UsageSummary(StrictModel):
     failed_jobs: int = Field(default=0, ge=0)
     total_duration_seconds: int = Field(default=0, ge=0)
     by_provider: dict[str, int] = Field(default_factory=dict)
+
+
+SocialPlatform = Literal[
+    "blog",
+    "wechat",
+    "zhihu",
+    "bilibili",
+    "xiaohongshu",
+    "douyin",
+    "podcast",
+]
+
+
+class SocialDraft(StrictModel):
+    platform: SocialPlatform
+    title: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=20_000)
+    hashtags: list[str] = Field(default_factory=list, max_length=20)
+    requires_human_approval: bool = True
+    published: bool = False
+
+
+class SocialDraftBundle(StrictModel):
+    schema_version: Literal["social-drafts-v1"] = "social-drafts-v1"
+    plan_id: UUID
+    drafts: list[SocialDraft] = Field(min_length=1, max_length=20)
 
 
 class HealthResponse(StrictModel):

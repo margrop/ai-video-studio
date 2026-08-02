@@ -61,6 +61,7 @@ download host must be explicitly allowed by `AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS`.
 - `GET /v1/jobs/{job_id}/artifacts/story-plan.json`
 - `GET /v1/jobs/{job_id}/artifacts/subtitles.srt`
 - `GET /v1/jobs/{job_id}/artifacts/narration.wav`
+- `GET /v1/jobs/{job_id}/artifacts/social-drafts.json`
 
 ## Web dashboard
 
