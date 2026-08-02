@@ -78,8 +78,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>主题</th><th>状态</th><th>尝试</th><th>更新时间</th><th>操作</th></tr></thead>
-            <tbody id="jobs"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+            <thead><tr><th>主题</th><th>状态</th><th>进度</th><th>尝试</th><th>更新时间</th><th>操作</th></tr></thead>
+            <tbody id="jobs"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -87,11 +87,12 @@
       <section id="detail" class="panel detail-panel hidden">
         <div class="panel-heading"><div><p class="eyebrow">JOB DETAIL</p><h2 id="detail-title">任务详情</h2></div><button id="close-detail" class="button secondary" type="button">关闭</button></div>
         <div id="detail-meta" class="detail-meta"></div>
+        <div id="detail-progress" class="progress-card"></div>
         <div class="detail-columns"><div><h3>事件</h3><ol id="events" class="events"></ol></div><div><h3>产物</h3><div id="artifacts" class="artifacts"></div></div></div>
         <div class="approval-panel"><h3>社交草稿审批（发布前必须人工批准）</h3><div id="approvals" class="approvals"></div><h3>发布审计</h3><ol id="publish-audit" class="events"></ol></div>
       </section>
 
-      <footer><span>AIVS 0.13 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
+      <footer><span>AIVS 0.14 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
     </main>
     <script type="module" src="/dashboard/app.js"></script>
   </body>

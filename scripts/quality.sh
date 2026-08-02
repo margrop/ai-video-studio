@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python -m compileall -q apps packages providers tests
-python -m ruff check .
-python -m ruff format --check .
-python -m pytest
+PYTHON_BIN="${AIVS_PYTHON:-python}"
+if [[ -x ".venv/bin/python" && -z "${AIVS_PYTHON:-}" ]]; then
+  PYTHON_BIN=".venv/bin/python"
+fi
+
+"$PYTHON_BIN" -m compileall -q apps packages providers tests
+"$PYTHON_BIN" -m ruff check .
+"$PYTHON_BIN" -m ruff format --check .
+"$PYTHON_BIN" -m pytest

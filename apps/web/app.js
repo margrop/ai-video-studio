@@ -17,6 +17,19 @@ function statusLabel(status) {
   return { queued: "排队中", running: "运行中", succeeded: "已完成", failed: "失败" }[status] || status;
 }
 
+function progressStageLabel(stage) {
+  return {
+    queued: "等待调度", planning: "规划中", narration: "配音中", video: "分镜生成中",
+    composition: "合成中", social_drafts: "生成社交草稿", completed: "已完成", failed: "失败",
+  }[stage] || stage || "等待中";
+}
+
+function renderProgress(progress) {
+  const current = progress || { percent: 0, stage: "queued", completed_shots: 0, total_shots: 0, current_shot: 0, message: "" };
+  const shotText = current.total_shots ? ` · Shot ${current.current_shot || current.completed_shots}/${current.total_shots}` : "";
+  return `<div class="progress-line"><div class="progress-track"><span style="width:${Math.max(0, Math.min(100, Number(current.percent) || 0))}%"></span></div><strong>${Number(current.percent) || 0}%</strong></div><small>${escapeHtml(progressStageLabel(current.stage))}${shotText ? escapeHtml(shotText) : ""}${current.message ? ` · ${escapeHtml(current.message)}` : ""}</small>`;
+}
+
 function requestHeaders(extra = {}) {
   const headers = { "content-type": "application/json", ...extra };
   if (state.apiKey) headers.Authorization = `Bearer ${state.apiKey}`;
@@ -57,10 +70,11 @@ function renderJobs() {
     <tr class="job-row" data-job-id="${escapeHtml(job.job_id)}">
       <td><strong>${escapeHtml(job.request.topic)}</strong><small>${escapeHtml(job.request.language)} · ${job.request.duration_seconds}s</small></td>
       <td><span class="status ${escapeHtml(job.status)}">${statusLabel(job.status)}</span></td>
+      <td class="progress-cell">${renderProgress(job.progress)}</td>
       <td>${job.attempt}/${job.max_attempts}</td>
       <td>${formatDate(job.updated_at)}</td>
       <td><button class="link-button" data-open-job="${escapeHtml(job.job_id)}" type="button">查看</button></td>
-    </tr>`).join("") : '<tr><td colspan="5" class="empty">暂无任务</td></tr>';
+    </tr>`).join("") : '<tr><td colspan="6" class="empty">暂无任务</td></tr>';
   document.querySelectorAll("[data-open-job]").forEach((button) => button.addEventListener("click", () => openDetail(button.dataset.openJob)));
 }
 
@@ -126,6 +140,7 @@ async function openDetail(jobId) {
   $("detail").classList.remove("hidden");
   $("detail-title").textContent = job.request.topic;
   $("detail-meta").innerHTML = `<span class="status ${escapeHtml(job.status)}">${statusLabel(job.status)}</span><span>尝试 ${job.attempt}/${job.max_attempts}</span><span>创建于 ${formatDate(job.created_at)}</span>${job.error_message ? `<span class="error-text">${escapeHtml(job.error_code)}: ${escapeHtml(job.error_message)}</span>` : ""}`;
+  $("detail-progress").innerHTML = renderProgress(job.progress);
   $("events").innerHTML = events.map((event) => `<li><span class="event-type">${escapeHtml(event.event_type)}</span><span>${escapeHtml(event.message)}</span><time>${formatDate(event.created_at)}</time></li>`).join("") || '<li class="muted">暂无事件</li>';
   const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"], ["social-drafts.json", "社交草稿"]];
   $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<button class="artifact" data-artifact-name="${name}" type="button">${label}<span>下载 ↗</span></button>`).join("") : '<p class="muted">任务成功后可下载产物</p>';

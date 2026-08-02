@@ -120,6 +120,64 @@ class TemplateSummary(StrictModel):
     allow_external_posting: bool = False
 
 
+ProgressStage = Literal[
+    "queued",
+    "planning",
+    "narration",
+    "video",
+    "composition",
+    "social_drafts",
+    "completed",
+    "failed",
+]
+
+
+def progress_percent(
+    stage: ProgressStage,
+    *,
+    completed_shots: int = 0,
+    total_shots: int = 0,
+    previous_percent: int = 0,
+) -> int:
+    """Map pipeline stages to a conservative operator-facing percentage."""
+
+    if stage == "queued":
+        return 0
+    if stage == "planning":
+        return 10
+    if stage == "narration":
+        return 25
+    if stage == "video":
+        if total_shots <= 0:
+            return 30
+        return min(85, 30 + round(55 * completed_shots / total_shots))
+    if stage == "composition":
+        return 90
+    if stage == "social_drafts":
+        return 95
+    if stage == "completed":
+        return 100
+    return min(max(previous_percent, 0), 99)
+
+
+class JobProgress(StrictModel):
+    stage: ProgressStage = "queued"
+    percent: int = Field(default=0, ge=0, le=100)
+    completed_shots: int = Field(default=0, ge=0, le=30)
+    total_shots: int = Field(default=0, ge=0, le=30)
+    current_shot: int = Field(default=0, ge=0, le=30)
+    message: str = Field(default="", max_length=300)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="after")
+    def validate_shot_counts(self) -> JobProgress:
+        if self.completed_shots > self.total_shots:
+            raise ValueError("completed_shots cannot exceed total_shots")
+        if self.current_shot > self.total_shots:
+            raise ValueError("current_shot cannot exceed total_shots")
+        return self
+
+
 class JobRecord(StrictModel):
     job_id: UUID = Field(default_factory=uuid4)
     status: Literal["queued", "running", "succeeded", "failed"] = "queued"
@@ -137,6 +195,7 @@ class JobRecord(StrictModel):
     social_drafts_path: str | None = None
     error_code: str | None = None
     error_message: str | None = None
+    progress: JobProgress = Field(default_factory=JobProgress)
 
     @field_validator("error_message")
     @classmethod
@@ -149,7 +208,7 @@ class JobRecord(StrictModel):
 class JobEvent(StrictModel):
     event_id: UUID = Field(default_factory=uuid4)
     job_id: UUID
-    event_type: Literal["queued", "running", "retrying", "succeeded", "failed"]
+    event_type: Literal["queued", "running", "retrying", "succeeded", "failed", "progress"]
     attempt: int = Field(default=0, ge=0, le=100)
     message: str = Field(default="", max_length=300)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -294,4 +353,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.13.0"
+    version: str = "0.14.0"

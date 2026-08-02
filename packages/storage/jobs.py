@@ -16,7 +16,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
-from packages.contracts.models import CreateJobRequest, JobEvent, JobRecord
+from packages.contracts.models import (
+    CreateJobRequest,
+    JobEvent,
+    JobProgress,
+    JobRecord,
+    ProgressStage,
+    progress_percent,
+)
 from packages.storage.usage import UsageLedger
 
 _SECRET_RE = re.compile(
@@ -230,6 +237,33 @@ class FileJobStore:
         self._atomic_write(self._job_path(record.job_id), record.model_dump_json(indent=2))
         return record
 
+    def update_progress(
+        self,
+        record: JobRecord,
+        *,
+        stage: ProgressStage,
+        completed_shots: int = 0,
+        total_shots: int = 0,
+        current_shot: int = 0,
+        message: str = "",
+    ) -> JobRecord:
+        record.progress = JobProgress(
+            stage=stage,
+            percent=progress_percent(
+                stage,
+                completed_shots=completed_shots,
+                total_shots=total_shots,
+                previous_percent=record.progress.percent,
+            ),
+            completed_shots=completed_shots,
+            total_shots=total_shots,
+            current_shot=current_shot,
+            message=self._safe_message(message),
+        )
+        self.save(record)
+        self._append_event(record, "progress", record.progress.message)
+        return record
+
     def recover_expired_leases(self) -> int:
         """Requeue or fail jobs left in processing after a worker crash."""
 
@@ -307,6 +341,9 @@ class FileJobStore:
             record.lease_expires_at = now + timedelta(seconds=self.lease_seconds)
             record.error_code = None
             record.error_message = None
+            record.progress = JobProgress(
+                stage="planning", percent=10, message="worker claimed job"
+            )
             self.save(record)
             self._append_event(record, "running", "worker claimed job")
             return record
@@ -317,6 +354,15 @@ class FileJobStore:
 
         record.lease_expires_at = None
         record.next_retry_at = None
+        total_shots = record.progress.total_shots
+        record.progress = JobProgress(
+            stage="completed",
+            percent=100,
+            completed_shots=total_shots,
+            total_shots=total_shots,
+            current_shot=total_shots,
+            message="render completed",
+        )
         self.save(record)
         self._remove_processing(record.job_id)
         if record.status == "succeeded":
@@ -351,6 +397,7 @@ class FileJobStore:
             )
             record.status = "queued"
             record.next_retry_at = now + timedelta(seconds=delay)
+            record.progress = JobProgress(stage="queued", percent=0, message="retry scheduled")
             self.save(record)
             self._remove_processing(record.job_id)
             self._enqueue(record)
@@ -359,6 +406,14 @@ class FileJobStore:
 
         record.status = "failed"
         record.next_retry_at = None
+        record.progress = JobProgress(
+            stage="failed",
+            percent=record.progress.percent,
+            completed_shots=record.progress.completed_shots,
+            total_shots=record.progress.total_shots,
+            current_shot=record.progress.current_shot,
+            message=record.error_message or record.error_code,
+        )
         self.save(record)
         self._remove_processing(record.job_id)
         self._append_event(record, "failed", record.error_message or record.error_code)

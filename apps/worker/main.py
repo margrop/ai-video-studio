@@ -42,12 +42,39 @@ async def process_once(
                 if (path := app_runtime.assets.local_path(asset_id)) is not None
             ]
         prompt_config = app_runtime.templates.prompt_config(record.request.template_id)
+
+        def report_progress(
+            stage: str,
+            completed_shots: int,
+            total_shots: int,
+            current_shot: int,
+            message: str,
+        ) -> None:
+            store.update_progress(
+                record,
+                stage=stage,  # type: ignore[arg-type] - validated by JobProgress
+                completed_shots=completed_shots,
+                total_shots=total_shots,
+                current_shot=current_shot,
+                message=message,
+            )
+
         result = await app_runtime.workflow.run(
             record.request,
             output_dir,
             character_prompt=character_prompt,
             reference_images=tuple(reference_images),
             prompt_config=prompt_config,
+            progress_callback=report_progress,
+        )
+        total_shots = len(result.plan.shots) if app_runtime.video_provider is not None else 0
+        store.update_progress(
+            record,
+            stage="social_drafts",
+            completed_shots=total_shots,
+            total_shots=total_shots,
+            current_shot=total_shots,
+            message="正在生成社交平台草稿",
         )
         record.status = "succeeded"
         record.plan_path = result.plan_path.name

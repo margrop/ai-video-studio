@@ -29,7 +29,21 @@ second job.
 
 ## Inspect a job
 
-`GET /v1/jobs/{job_id}` returns `queued`, `running`, `succeeded` or `failed`. A failed job exposes only a stable error code and a short safe diagnostic.
+`GET /v1/jobs/{job_id}` returns `queued`, `running`, `succeeded` or `failed`.
+It also includes a server-owned `progress` object:
+
+```json
+{
+  "stage": "video",
+  "percent": 58,
+  "completed_shots": 4,
+  "total_shots": 8,
+  "current_shot": 5,
+  "message": "已完成 Shot 4/8"
+}
+```
+
+The progress stage is informational and cannot be set by the client. A failed job exposes only a stable error code and a short safe diagnostic.
 
 The worker uses a service-owned retry budget. A failed attempt becomes
 `queued` with a bounded exponential backoff until the budget is exhausted;
@@ -38,7 +52,7 @@ worker leases are recovered after a process crash.
 ## Operations
 
 - `GET /v1/jobs?status=queued&limit=50` lists recent jobs;
-- `GET /v1/jobs/{job_id}/events` returns safe state-transition events;
+- `GET /v1/jobs/{job_id}/events` returns safe state-transition and shot-progress events;
 - `GET /v1/stats` returns queue depth and status counts;
 - `GET /v1/usage` returns idempotent terminal usage totals and provider counts;
 - `GET /v1/providers` returns configured capability metadata without secrets.

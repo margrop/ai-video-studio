@@ -24,9 +24,12 @@ from uuid import UUID
 from packages.contracts.models import (
     CreateJobRequest,
     JobEvent,
+    JobProgress,
     JobRecord,
+    ProgressStage,
     UsageRecord,
     UsageSummary,
+    progress_percent,
 )
 
 _SECRET_RE = re.compile(
@@ -279,6 +282,33 @@ class RedisJobStore:
         self.client.set(self._job_key(record.job_id), record.model_dump_json())
         return record
 
+    def update_progress(
+        self,
+        record: JobRecord,
+        *,
+        stage: ProgressStage,
+        completed_shots: int = 0,
+        total_shots: int = 0,
+        current_shot: int = 0,
+        message: str = "",
+    ) -> JobRecord:
+        record.progress = JobProgress(
+            stage=stage,
+            percent=progress_percent(
+                stage,
+                completed_shots=completed_shots,
+                total_shots=total_shots,
+                previous_percent=record.progress.percent,
+            ),
+            completed_shots=completed_shots,
+            total_shots=total_shots,
+            current_shot=current_shot,
+            message=self._safe_message(message),
+        )
+        self.save(record)
+        self._append_event(record, "progress", record.progress.message)
+        return record
+
     def _processing_ids(self) -> list[str]:
         return [_text(value) for value in self.client.lrange(self.processing_key, 0, -1)]
 
@@ -390,6 +420,9 @@ class RedisJobStore:
             record.lease_expires_at = now + timedelta(seconds=self.lease_seconds)
             record.error_code = None
             record.error_message = None
+            record.progress = JobProgress(
+                stage="planning", percent=10, message="worker claimed job"
+            )
             self.save(record)
             self._append_event(record, "running", "worker claimed job")
             return record
@@ -397,6 +430,15 @@ class RedisJobStore:
     def finish(self, record: JobRecord, *, provider_id: str = "offline-renderer") -> JobRecord:
         record.lease_expires_at = None
         record.next_retry_at = None
+        total_shots = record.progress.total_shots
+        record.progress = JobProgress(
+            stage="completed",
+            percent=100,
+            completed_shots=total_shots,
+            total_shots=total_shots,
+            current_shot=total_shots,
+            message="render completed",
+        )
         self.save(record)
         self._remove_processing(record.job_id)
         if record.status == "succeeded":
@@ -430,6 +472,7 @@ class RedisJobStore:
             )
             record.status = "queued"
             record.next_retry_at = now + timedelta(seconds=delay)
+            record.progress = JobProgress(stage="queued", percent=0, message="retry scheduled")
             self.save(record)
             self.client.zadd(
                 self.retry_key,
@@ -440,6 +483,14 @@ class RedisJobStore:
 
         record.status = "failed"
         record.next_retry_at = None
+        record.progress = JobProgress(
+            stage="failed",
+            percent=record.progress.percent,
+            completed_shots=record.progress.completed_shots,
+            total_shots=record.progress.total_shots,
+            current_shot=record.progress.current_shot,
+            message=record.error_message or record.error_code,
+        )
         self.save(record)
         self._append_event(record, "failed", record.error_message or record.error_code)
         self.usage.record(
