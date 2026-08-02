@@ -40,6 +40,7 @@
   by file, Redis and PostgreSQL queues
 - explicit Template versions and server-owned Brand Presets are available to
   the API, CLI, MCP and Dashboard
+- provider Shot Manifests support safe per-shot retry reuse and inspection
 
 ## Phase 4 — foundation completed
 

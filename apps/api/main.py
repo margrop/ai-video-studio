@@ -68,7 +68,7 @@ def create_app(
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
     generated_artifacts = artifact_store or build_artifact_store(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.15.0")
+    app = FastAPI(title="AI Video Studio API", version="0.16.0")
     approval_store = approval_store or build_approval_store(job_store.root / "approvals")
     audit_store = audit_store or build_audit_store(job_store.root / "publish-audit")
     publishing_service = PublishingService(
@@ -368,6 +368,7 @@ def create_app(
             "subtitles.srt": "subtitle_path",
             "narration.wav": "audio_path",
             "social-drafts.json": "social_drafts_path",
+            "shot-manifest.json": "shot_manifest_path",
         }
         if artifact_name not in allowed:
             raise HTTPException(status_code=404, detail="artifact_not_found")

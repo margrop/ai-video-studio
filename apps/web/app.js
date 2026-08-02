@@ -149,7 +149,7 @@ async function openDetail(jobId) {
   $("detail-meta").innerHTML = `<span class="status ${escapeHtml(job.status)}">${statusLabel(job.status)}</span><span>尝试 ${job.attempt}/${job.max_attempts}</span><span>创建于 ${formatDate(job.created_at)}</span>${job.error_message ? `<span class="error-text">${escapeHtml(job.error_code)}: ${escapeHtml(job.error_message)}</span>` : ""}`;
   $("detail-progress").innerHTML = renderProgress(job.progress);
   $("events").innerHTML = events.map((event) => `<li><span class="event-type">${escapeHtml(event.event_type)}</span><span>${escapeHtml(event.message)}</span><time>${formatDate(event.created_at)}</time></li>`).join("") || '<li class="muted">暂无事件</li>';
-  const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"], ["social-drafts.json", "社交草稿"]];
+  const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["shot-manifest.json", "分镜清单"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"], ["social-drafts.json", "社交草稿"]];
   $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<button class="artifact" data-artifact-name="${name}" type="button">${label}<span>下载 ↗</span></button>`).join("") : '<p class="muted">任务成功后可下载产物</p>';
   document.querySelectorAll("[data-artifact-name]").forEach((button) => button.addEventListener("click", () => downloadArtifact(jobId, button.dataset.artifactName)));
   $("approvals").innerHTML = '<p class="muted">加载审批记录…</p>';

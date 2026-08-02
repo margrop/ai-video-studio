@@ -79,6 +79,11 @@ worker adds the social-draft milestone before the terminal success transition.
 Progress is metadata, not a client-controlled command, and shot updates also
 appear as safe `progress` events for operators and Agents.
 
+Provider-backed renders also maintain a server-owned `shot-manifest-v1` in the
+job staging directory. Each entry records the prompt hash, rounded duration,
+Provider ID and state. A retry reuses only a succeeded entry whose generated
+clip still exists and whose fingerprints match the newly planned Shot.
+
 The PostgreSQL backend uses the same metadata contract with transactional row
 claims. It stores jobs, events, idempotency, usage, catalogs, approvals and
 publish audit records; it does not store generated media or binary catalog

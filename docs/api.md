@@ -89,6 +89,13 @@ download host must be explicitly allowed by `AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS`.
 - `GET /v1/jobs/{job_id}/artifacts/subtitles.srt`
 - `GET /v1/jobs/{job_id}/artifacts/narration.wav`
 - `GET /v1/jobs/{job_id}/artifacts/social-drafts.json`
+- `GET /v1/jobs/{job_id}/artifacts/shot-manifest.json`
+
+For a Provider-backed job, `shot-manifest.json` is a `shot-manifest-v1`
+document. A succeeded Shot is reused on a retry only when its plan
+fingerprint, Provider ID, prompt hash, duration and local clip are all still
+consistent. Failed or interrupted Shots are retried individually while the
+manifest remains an operator-visible record.
 
 Approval decisions and publish attempts are append-only and auditable. The
 publish endpoint defaults to dry-run, and a non-dry-run request is blocked
