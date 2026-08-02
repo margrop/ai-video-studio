@@ -60,6 +60,9 @@ def generate(
     output: Path = typer.Option(Path("artifacts/video.mp4"), "--output", help="Output MP4 path."),
     duration: int = typer.Option(60, min=15, max=180, help="Target duration in seconds."),
     no_ai: bool = typer.Option(False, "--no-ai", help="Use the deterministic planner."),
+    brand_preset_id: str | None = typer.Option(
+        None, "--brand-preset", help="Server-owned Brand Preset."
+    ),
 ) -> None:
     """Generate a vertical MP4 from a topic or Markdown article."""
 
@@ -69,6 +72,7 @@ def generate(
             source_markdown=_read_source(source),
             duration_seconds=duration,
             use_ai=not no_ai,
+            brand_preset_id=brand_preset_id,
         )
         work_dir = output.parent / f".{output.stem}-aivs"
         result = await build_default_workflow().run(request, work_dir)
@@ -92,6 +96,9 @@ def rss(
     output: Path = typer.Option(Path("artifacts/rss-video.mp4"), "--output"),
     duration: int = typer.Option(60, min=15, max=180),
     no_ai: bool = typer.Option(False, "--no-ai", help="Use the deterministic planner."),
+    brand_preset_id: str | None = typer.Option(
+        None, "--brand-preset", help="Server-owned Brand Preset."
+    ),
 ) -> None:
     """Turn one RSS/Atom item into a video and reviewable social drafts."""
 
@@ -108,6 +115,7 @@ def rss(
             source_markdown=entry.body,
             duration_seconds=duration,
             use_ai=not no_ai,
+            brand_preset_id=brand_preset_id,
         )
         work_dir = output.parent / f".{output.stem}-aivs"
         result = await build_default_workflow().run(request, work_dir)

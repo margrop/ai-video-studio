@@ -38,6 +38,7 @@ def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
     assert client.get("/v1/usage").json()["total_jobs"] == 0
     assert client.get("/v1/providers").json()["providers"]
     assert client.get("/v1/templates").json()[0]["template_id"] == "tech-blog-v1"
+    assert client.get("/v1/brand-presets").json()[0]["brand_preset_id"] == "aivs-default-v1"
     assert client.get(f"/v1/jobs/{body['job_id']}/events").json()[0]["event_type"] == "queued"
 
     asset = client.post(
@@ -80,6 +81,12 @@ def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
         json={"topic": "Bad template", "template_id": "../../secret", "use_ai": False},
     )
     assert invalid_template.status_code == 422
+
+    invalid_brand = client.post(
+        "/v1/jobs",
+        json={"topic": "Bad brand", "brand_preset_id": "missing", "use_ai": False},
+    )
+    assert invalid_brand.status_code == 422
 
     rejected = client.post(
         "/v1/jobs",

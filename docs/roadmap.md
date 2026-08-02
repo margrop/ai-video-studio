@@ -38,6 +38,8 @@
 - provider capability discovery and usage/cost records are included
 - server-owned stage and per-shot progress metadata is persisted consistently
   by file, Redis and PostgreSQL queues
+- explicit Template versions and server-owned Brand Presets are available to
+  the API, CLI, MCP and Dashboard
 
 ## Phase 4 — foundation completed
 
@@ -50,5 +52,5 @@
   rate limits and platform-specific tests
 
 The remaining work is integration-specific extension work: verified vendor
-request/response adapters, template and brand-preset versioning, and separately
-tested social-platform publishers.
+request/response adapters, full media-overlay rendering for Brand Preset asset
+references, and separately tested social-platform publishers.

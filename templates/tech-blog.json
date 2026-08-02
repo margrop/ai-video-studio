@@ -1,5 +1,7 @@
 {
   "template_id": "tech-blog-v1",
+  "version": 1,
+  "brand_preset_id": "aivs-default-v1",
   "title_style": "clear and practical",
   "target_duration_seconds": 60,
   "language": "zh-CN",

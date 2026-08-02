@@ -1,0 +1,13 @@
+{
+  "brand_preset_id": "aivs-default-v1",
+  "name": "AIVS Default",
+  "version": 1,
+  "description": "Neutral dark-studio visual language for technical content.",
+  "prompt": {
+    "base": "clean vertical short-video composition, coherent visual language",
+    "camera": "measured documentary movement",
+    "lighting": "soft natural light, high legibility, controlled contrast",
+    "negative": "blurry, distorted text, extra limbs, watermark, logo artifacts"
+  },
+  "assets": {}
+}

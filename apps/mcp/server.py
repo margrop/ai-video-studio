@@ -27,6 +27,7 @@ def create_server(service: AIVSToolService | None = None):
         voice: str = "neutral",
         use_ai: bool = False,
         template_id: str = "tech-blog-v1",
+        brand_preset_id: str | None = None,
         character_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, object]:
@@ -40,6 +41,7 @@ def create_server(service: AIVSToolService | None = None):
             voice=voice,
             use_ai=use_ai,
             template_id=template_id,
+            brand_preset_id=brand_preset_id,
             character_id=character_id,
             idempotency_key=idempotency_key,
         )
@@ -55,6 +57,12 @@ def create_server(service: AIVSToolService | None = None):
         """List recent AIVS jobs."""
 
         return tool_service.list_jobs(status=status, limit=limit)
+
+    @server.tool()
+    async def list_brand_presets() -> list[dict[str, object]]:
+        """List server-owned visual identity presets available to jobs."""
+
+        return tool_service.list_brand_presets()
 
     @server.tool()
     async def create_social_drafts(job_id: str) -> dict[str, object]:

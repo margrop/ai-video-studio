@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0 — 2026-08-02
+
+- add explicit template versions and server-owned Brand Preset catalog;
+- merge selected brand prompts into the deterministic Prompt Builder layer;
+- expose reusable brand identity and intro/outro asset references through API,
+  CLI, MCP and Dashboard job creation;
+- keep template and brand selection server-validated rather than accepting raw
+  prompt overrides from jobs.
+
 ## 0.14.0 — 2026-08-02
 
 - add provider-neutral `JobProgress` metadata for planning, narration, shot

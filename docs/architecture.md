@@ -29,9 +29,11 @@ flowchart TD
 
 `AssetCatalog` stores metadata and operator-imported files below the server-owned
 library root. `CharacterCatalog` stores a stable character prompt, voice and
-reference asset IDs. `TemplateCatalog` reads versioned JSON templates and
-exposes only validated summaries and prompt fields to the workflow. A job may
-reference these IDs, but it cannot submit a raw prompt override or local path.
+reference asset IDs. `TemplateCatalog` reads explicitly versioned JSON templates
+and `BrandPresetCatalog` reads reusable visual identity layers plus optional
+intro/outro/logo asset references. A job may reference these IDs, but it cannot
+submit a raw prompt override or local path. Brand prompt layers are merged last
+by the deterministic Prompt Builder so identity stays consistent across shots.
 Filesystem catalogs are the zero-dependency default; PostgreSQL mode can store
 asset/character metadata while binary files remain server-owned.
 

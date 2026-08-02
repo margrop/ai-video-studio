@@ -59,5 +59,31 @@ def test_template_catalog_and_prompt_builder_are_deterministic() -> None:
     prompt = PromptBuilder.from_config(catalog.prompt_config("tech-blog-v1"))
 
     assert template.template_id == "tech-blog-v1"
+    assert template.version == 1
+    assert template.brand_preset_id == "aivs-default-v1"
     assert template.requires_human_approval_before_publish is True
     assert "clean vertical" in prompt.build(visual="a title card")
+
+    brand = catalog.brand_presets.get("aivs-default-v1")
+    assert brand.version == 1
+    assert "documentary" in brand.camera_prompt
+
+
+def test_brand_preset_is_the_final_prompt_consistency_layer(tmp_path) -> None:
+    root = tmp_path / "templates"
+    (root / "brands").mkdir(parents=True)
+    (root / "brands" / "custom-v2.json").write_text(
+        '{"brand_preset_id":"custom-v2","name":"Custom","version":2,'
+        '"prompt":{"base":"custom base","camera":"locked camera"}}',
+        encoding="utf-8",
+    )
+    (root / "template.json").write_text(
+        '{"template_id":"template","prompt":{"base":"template base","lighting":"template light"}}',
+        encoding="utf-8",
+    )
+    catalog = TemplateCatalog(root)
+
+    config = catalog.prompt_config("template", "custom-v2")
+    assert config["base"] == "custom base"
+    assert config["camera"] == "locked camera"
+    assert config["lighting"] == "template light"

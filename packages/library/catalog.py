@@ -19,6 +19,7 @@ from uuid import UUID
 
 from packages.contracts.models import (
     AssetRecord,
+    BrandPresetSummary,
     CharacterRecord,
     CreateAssetRequest,
     CreateCharacterRequest,
@@ -201,9 +202,89 @@ class CharacterCatalog(_JsonStore):
         return records[:limit]
 
 
+class BrandPresetCatalog:
+    """Read-only, versioned brand prompt and reusable asset references."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = root
+
+    @staticmethod
+    def _read(path: Path) -> dict[str, object]:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"brand preset is invalid: {path.name}") from exc
+        if not isinstance(data, dict):
+            raise ValueError(f"brand preset is invalid: {path.name}")
+        return data
+
+    def _load(self, brand_preset_id: str) -> dict[str, object]:
+        if not brand_preset_id or Path(brand_preset_id).name != brand_preset_id:
+            raise CatalogNotFound(f"brand preset is not registered: {brand_preset_id}")
+        direct_path = self.root / f"{brand_preset_id}.json"
+        candidates = [direct_path] if direct_path.is_file() else sorted(self.root.glob("*.json"))
+        for path in candidates:
+            try:
+                data = self._read(path)
+            except ValueError:
+                continue
+            if str(data.get("brand_preset_id", path.stem)) == brand_preset_id:
+                return data
+        raise CatalogNotFound(f"brand preset is not registered: {brand_preset_id}")
+
+    @staticmethod
+    def _summary(data: dict[str, object], fallback_id: str) -> BrandPresetSummary:
+        prompt = data.get("prompt", {})
+        if not isinstance(prompt, dict):
+            prompt = {}
+        assets = data.get("assets", {})
+        if not isinstance(assets, dict):
+            assets = {}
+        return BrandPresetSummary(
+            brand_preset_id=str(data.get("brand_preset_id", fallback_id)),
+            name=str(data.get("name", fallback_id)),
+            version=int(data.get("version", 1)),
+            description=str(data.get("description", "")),
+            base_prompt=str(prompt.get("base", "")),
+            camera_prompt=str(prompt.get("camera", "")),
+            lighting_prompt=str(prompt.get("lighting", "")),
+            negative_prompt=str(prompt.get("negative", "")),
+            logo_asset_id=assets.get("logo_asset_id"),
+            intro_asset_id=assets.get("intro_asset_id"),
+            outro_asset_id=assets.get("outro_asset_id"),
+        )
+
+    def get(self, brand_preset_id: str) -> BrandPresetSummary:
+        return self._summary(self._load(brand_preset_id), brand_preset_id)
+
+    def list(self) -> list[BrandPresetSummary]:
+        presets: list[BrandPresetSummary] = []
+        for path in sorted(self.root.glob("*.json")):
+            try:
+                data = self._read(path)
+                presets.append(self._summary(data, path.stem))
+            except ValueError:
+                continue
+        return presets
+
+    def prompt_config(self, brand_preset_id: str) -> dict[str, str]:
+        summary = self.get(brand_preset_id)
+        return {
+            key: value
+            for key, value in {
+                "base": summary.base_prompt,
+                "camera": summary.camera_prompt,
+                "lighting": summary.lighting_prompt,
+                "negative": summary.negative_prompt,
+            }.items()
+            if value
+        }
+
+
 class TemplateCatalog:
     def __init__(self, root: Path) -> None:
         self.root = root
+        self.brand_presets = BrandPresetCatalog(root / "brands")
 
     @staticmethod
     def _read(path: Path) -> dict[str, object]:
@@ -236,6 +317,8 @@ class TemplateCatalog:
             review = {}
         return TemplateSummary(
             template_id=str(data.get("template_id", fallback_id)),
+            version=int(data.get("version", 1)),
+            brand_preset_id=str(data.get("brand_preset_id", "aivs-default-v1")),
             title_style=str(data.get("title_style", "")),
             target_duration_seconds=int(data.get("target_duration_seconds", 60)),
             language=str(data.get("language", "zh-CN")),
@@ -260,13 +343,24 @@ class TemplateCatalog:
                 continue
         return templates
 
-    def prompt_config(self, template_id: str) -> dict[str, str]:
+    def prompt_config(
+        self,
+        template_id: str,
+        brand_preset_id: str | None = None,
+    ) -> dict[str, str]:
         data = self._load(template_id)
+        selected_brand_id = brand_preset_id or str(data.get("brand_preset_id", "aivs-default-v1"))
         raw_prompt = data.get("prompt", {})
-        if not isinstance(raw_prompt, dict):
-            return {}
-        return {
-            key: str(raw_prompt[key])
-            for key in ("base", "camera", "lighting", "negative")
-            if key in raw_prompt
-        }
+        config = (
+            {
+                key: str(raw_prompt[key])
+                for key in ("base", "camera", "lighting", "negative")
+                if key in raw_prompt
+            }
+            if isinstance(raw_prompt, dict)
+            else {}
+        )
+        # Brand consistency is the final deterministic layer, so a selected
+        # brand preset can override a generic template's visual defaults.
+        config.update(self.brand_presets.prompt_config(selected_brand_id))
+        return config

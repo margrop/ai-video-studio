@@ -61,6 +61,7 @@ class CreateJobRequest(StrictModel):
     language: str = Field(default="zh-CN", min_length=2, max_length=20)
     voice: str = Field(default="neutral", min_length=1, max_length=100)
     template_id: str = Field(default="tech-blog-v1", min_length=1, max_length=100)
+    brand_preset_id: str | None = Field(default=None, max_length=100)
     character_id: UUID | None = None
     use_ai: bool = True
 
@@ -112,12 +113,28 @@ class CharacterRecord(CreateCharacterRequest):
 
 class TemplateSummary(StrictModel):
     template_id: str = Field(min_length=1, max_length=100)
+    version: int = Field(default=1, ge=1, le=100)
+    brand_preset_id: str = Field(default="aivs-default-v1", min_length=1, max_length=100)
     title_style: str = Field(default="", max_length=200)
     target_duration_seconds: int = Field(ge=15, le=180)
     language: str = Field(min_length=2, max_length=20)
     voice: str = Field(min_length=1, max_length=100)
     requires_human_approval_before_publish: bool = True
     allow_external_posting: bool = False
+
+
+class BrandPresetSummary(StrictModel):
+    brand_preset_id: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100)
+    version: int = Field(default=1, ge=1, le=100)
+    description: str = Field(default="", max_length=500)
+    base_prompt: str = Field(default="", max_length=1000)
+    camera_prompt: str = Field(default="", max_length=500)
+    lighting_prompt: str = Field(default="", max_length=500)
+    negative_prompt: str = Field(default="", max_length=1000)
+    logo_asset_id: UUID | None = None
+    intro_asset_id: UUID | None = None
+    outro_asset_id: UUID | None = None
 
 
 ProgressStage = Literal[
@@ -353,4 +370,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.14.0"
+    version: str = "0.15.0"

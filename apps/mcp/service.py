@@ -69,6 +69,7 @@ class AIVSToolService:
         voice: str = "neutral",
         use_ai: bool = False,
         template_id: str = "tech-blog-v1",
+        brand_preset_id: str | None = None,
         character_id: str | None = None,
         idempotency_key: str | None = None,
     ) -> dict[str, object]:
@@ -80,6 +81,7 @@ class AIVSToolService:
             voice=voice,
             use_ai=use_ai,
             template_id=template_id,
+            brand_preset_id=brand_preset_id,
             character_id=UUID(character_id) if character_id else None,
         )
         record = self.store.create(request, idempotency_key=idempotency_key)
@@ -104,6 +106,11 @@ class AIVSToolService:
     def list_jobs(self, *, status: str | None = None, limit: int = 20) -> list[dict[str, object]]:
         records = self.store.list_jobs(status=status, limit=limit)
         return [record.model_dump(mode="json") for record in records]
+
+    def list_brand_presets(self) -> list[dict[str, object]]:
+        return [
+            item.model_dump(mode="json") for item in self.runtime.templates.brand_presets.list()
+        ]
 
     def create_social_drafts(self, job_id: str) -> dict[str, object]:
         record = self.store.get(UUID(job_id))
