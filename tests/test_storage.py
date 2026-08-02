@@ -28,6 +28,32 @@ def test_file_job_store_transitions_queued_to_running(tmp_path) -> None:
     assert usage.total_duration_seconds == created.request.duration_seconds
 
 
+def test_file_job_store_persists_shot_progress_and_finalizes_it(tmp_path) -> None:
+    store = FileJobStore(tmp_path / "state")
+    created = store.create(CreateJobRequest(topic="Progress", use_ai=False))
+    claimed = store.claim_next()
+    assert claimed is not None
+
+    store.update_progress(
+        claimed,
+        stage="video",
+        completed_shots=3,
+        total_shots=8,
+        current_shot=4,
+        message="已完成 Shot 3/8",
+    )
+    observed = store.get(created.job_id)
+    assert observed is not None
+    assert observed.progress.percent == 51
+    assert observed.progress.current_shot == 4
+    assert store.events(created.job_id)[-1].event_type == "progress"
+
+    claimed.status = "succeeded"
+    store.finish(claimed)
+    assert store.get(created.job_id).progress.stage == "completed"
+    assert store.get(created.job_id).progress.percent == 100
+
+
 def test_idempotency_key_returns_the_original_job_without_a_duplicate(tmp_path) -> None:
     store = FileJobStore(tmp_path / "state")
     request = CreateJobRequest(topic="Idempotent", use_ai=False)
