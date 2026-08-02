@@ -71,6 +71,12 @@ can publish generated files to S3/MinIO. PostgreSQL mode additionally shares
 catalog metadata, approval history and publish audit events across API and
 worker processes.
 
+Every queue backend persists the same `JobProgress` contract. The workflow
+reports planning, narration, shot generation and composition milestones; the
+worker adds the social-draft milestone before the terminal success transition.
+Progress is metadata, not a client-controlled command, and shot updates also
+appear as safe `progress` events for operators and Agents.
+
 The PostgreSQL backend uses the same metadata contract with transactional row
 claims. It stores jobs, events, idempotency, usage, catalogs, approvals and
 publish audit records; it does not store generated media or binary catalog
