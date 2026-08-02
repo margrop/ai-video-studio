@@ -1,9 +1,8 @@
 """Redis-backed job storage for multi-process API and worker deployments.
 
-The backend stores metadata and queue state in Redis while generated files and
-the reusable local catalogs remain below ``root``. Deployments that run more
-than one host must mount a shared artifact/catalog volume or replace those
-paths with an object-storage adapter.
+The backend stores metadata and queue state in Redis while reusable local
+catalogs and worker staging remain below ``root``. Generated artifacts can be
+published independently through the ``ArtifactStore`` S3/MinIO backend.
 
 The implementation deliberately uses the small synchronous Redis client
 surface. API callers remain async at the HTTP boundary, and workers already

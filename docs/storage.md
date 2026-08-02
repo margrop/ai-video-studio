@@ -40,12 +40,53 @@ MCP stdio bridge to the public internet.
 
 ## Files and multi-host deployments
 
-Redis stores job metadata, queue state, events and usage records. Generated
-MP4/SRT/audio/plan files and the Asset/Character catalogs still live below
-`AIVS_STORAGE_ROOT`. In Docker Compose, mount the same `aivs_data` volume into
-all API and worker replicas. For separate hosts, the next storage slice must
-replace these local paths with an object-storage adapter and a shared catalog
-database; Redis alone does not make local files portable.
+Redis stores job metadata, queue state, events and usage records. Asset and
+Character catalogs, approval records and the worker's temporary staging files
+remain below `AIVS_STORAGE_ROOT`. Generated MP4/SRT/audio/plan files can use the
+artifact backend described below.
+
+## Artifact backends
+
+Artifact storage is selected independently with the service-owned
+`AIVS_ARTIFACT_BACKEND` setting:
+
+| Backend | Default | Intended use | Published location |
+|---|---:|---|---|
+| `filesystem` | yes | one trusted host or shared volume | `AIVS_STORAGE_ROOT/artifacts/<job-id>/` |
+| `s3` | no | AWS S3, MinIO or another S3-compatible store | `<bucket>/<prefix>/<job-id>/` |
+
+The API and worker use the same `ArtifactStore` contract. The worker renders to
+a local job staging directory, uploads every generated file only after the
+render and social-draft bundle are complete, and then marks the job successful.
+The API serves local files with `FileResponse` and streams S3 objects through
+the authenticated artifact endpoint, so S3 credentials never reach a browser
+or an MCP caller.
+
+Install the optional client and configure the same bucket settings for the API
+and every worker:
+
+```bash
+python -m pip install -e '.[dev,redis,s3]'
+export AIVS_ARTIFACT_BACKEND=s3
+export AIVS_S3_ENDPOINT_URL=http://127.0.0.1:9000  # omit for AWS S3
+export AIVS_S3_BUCKET=aivs
+export AIVS_S3_ACCESS_KEY_ID=minioadmin
+export AIVS_S3_SECRET_ACCESS_KEY=replace-with-local-secret
+export AIVS_S3_REGION=us-east-1
+export AIVS_S3_PREFIX=aivs
+```
+
+Create the bucket before submitting jobs. For MinIO, the endpoint must be
+reachable from both the API and worker containers. Keep credentials in a
+server-side secret store or Compose secret environment; never put them in a
+job request, artifact name, URL or repository file.
+
+S3 publication is intentionally upload-only from the worker boundary. The
+current release does not delete remote objects automatically; apply a bucket
+lifecycle/retention policy appropriate for article bodies, narration and
+generated media. Catalog and approval metadata are still local, so separate
+hosts require a shared volume for those records until the Postgres catalog
+slice is implemented.
 
 The filesystem backend remains the default so `aivs generate`, offline tests
 and a single-host installation require no Redis service.

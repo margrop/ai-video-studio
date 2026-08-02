@@ -9,22 +9,28 @@ from apps.worker.main import process_once
 from packages.contracts.models import CreateJobRequest, StoryPlan
 from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
-from packages.storage import JobStore, build_job_store
+from packages.storage import ArtifactStore, JobStore, build_artifact_store, build_job_store
 
 
 @dataclass(slots=True)
 class AIVSToolService:
     store: JobStore
     runtime: AppRuntime
+    artifact_store: ArtifactStore | None = None
+
+    def __post_init__(self) -> None:
+        if self.artifact_store is None:
+            self.artifact_store = build_artifact_store(self.store.root)
 
     @classmethod
     def from_env(cls) -> AIVSToolService:
         store = build_job_store()
         return cls(store=store, runtime=build_runtime(store.root))
 
-    @staticmethod
-    def _artifact_paths(store: JobStore, job_id: UUID) -> dict[str, str]:
-        directory = store.artifacts_dir / str(job_id)
+    def _artifact_paths(self, job_id: UUID) -> dict[str, str]:
+        if self.artifact_store is None:  # pragma: no cover - initialized in __post_init__
+            raise RuntimeError("artifact store is not configured")
+        directory = self.artifact_store.job_dir(job_id)
         names = (
             "video.mp4",
             "story-plan.json",
@@ -59,11 +65,11 @@ class AIVSToolService:
         )
         record = self.store.create(request, idempotency_key=idempotency_key)
         if record.status == "queued":
-            await process_once(self.store, self.runtime)
+            await process_once(self.store, self.runtime, self.artifact_store)
             record = self.store.get(record.job_id) or record
         return {
             "job": record.model_dump(mode="json"),
-            "artifacts": self._artifact_paths(self.store, record.job_id),
+            "artifacts": self._artifact_paths(record.job_id),
         }
 
     def inspect_job(self, job_id: str) -> dict[str, object]:
@@ -73,7 +79,7 @@ class AIVSToolService:
         return {
             "job": record.model_dump(mode="json"),
             "events": [event.model_dump(mode="json") for event in self.store.events(record.job_id)],
-            "artifacts": self._artifact_paths(self.store, record.job_id),
+            "artifacts": self._artifact_paths(record.job_id),
         }
 
     def list_jobs(self, *, status: str | None = None, limit: int = 20) -> list[dict[str, object]]:
@@ -86,12 +92,17 @@ class AIVSToolService:
             raise KeyError("job_not_found")
         if record.status != "succeeded":
             raise ValueError("job_not_ready")
-        plan_path = self.store.artifacts_dir / str(record.job_id) / "story-plan.json"
-        plan = StoryPlan.model_validate_json(plan_path.read_text(encoding="utf-8"))
+        if self.artifact_store is None:  # pragma: no cover - initialized in __post_init__
+            raise RuntimeError("artifact store is not configured")
+        plan = StoryPlan.model_validate_json(
+            self.artifact_store.read_bytes(record.job_id, "story-plan.json")
+        )
+        output_dir = self.artifact_store.job_dir(record.job_id)
         path = write_social_drafts(
             plan,
-            self.store.artifacts_dir / str(record.job_id) / "social-drafts.json",
+            output_dir / "social-drafts.json",
         )
+        self.artifact_store.publish(record.job_id, output_dir)
         record.social_drafts_path = path.name
         self.store.save(record)
         return {"job_id": str(record.job_id), "artifact": str(path)}

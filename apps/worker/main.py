@@ -12,16 +12,21 @@ from packages.library import CatalogNotFound
 from packages.providers import VideoProviderError
 from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
-from packages.storage import JobStore, build_job_store
+from packages.storage import ArtifactStore, JobStore, build_artifact_store, build_job_store
 
 app = typer.Typer(add_completion=False, help="Process AI Video Studio render jobs.")
 
 
-async def process_once(store: JobStore, runtime: AppRuntime | None = None) -> bool:
+async def process_once(
+    store: JobStore,
+    runtime: AppRuntime | None = None,
+    artifact_store: ArtifactStore | None = None,
+) -> bool:
     record = store.claim_next()
     if record is None:
         return False
-    output_dir = store.artifacts_dir / str(record.job_id)
+    generated_artifacts = artifact_store or build_artifact_store(store.root)
+    output_dir = generated_artifacts.job_dir(record.job_id)
     app_runtime = runtime or build_runtime(store.root)
     try:
         character_prompt = ""
@@ -44,6 +49,7 @@ async def process_once(store: JobStore, runtime: AppRuntime | None = None) -> bo
         record.video_path = result.video_path.name
         social_path = write_social_drafts(result.plan, output_dir / "social-drafts.json")
         record.social_drafts_path = social_path.name
+        generated_artifacts.publish(record.job_id, output_dir)
     except CatalogNotFound as exc:
         store.fail(
             record,
@@ -85,10 +91,11 @@ def run(
     """Process queued jobs until --once or Ctrl-C."""
     store = build_job_store(storage_root)
     runtime = build_runtime(store.root)
+    artifact_store = build_artifact_store(store.root)
 
     async def loop() -> None:
         while True:
-            processed = await process_once(store, runtime)
+            processed = await process_once(store, runtime, artifact_store)
             if once:
                 return
             if not processed:
