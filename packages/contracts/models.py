@@ -294,4 +294,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.11.0"
+    version: str = "0.12.0"
