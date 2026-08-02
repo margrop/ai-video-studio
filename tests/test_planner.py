@@ -19,3 +19,5 @@ async def test_deterministic_planner_creates_one_minute_timeline() -> None:
         -1
     ].duration_seconds == pytest.approx(60)
     assert all(shot.prompt for shot in result.plan.shots)
+    assert len(result.plan.shots) == 8
+    assert all(4 <= shot.duration_seconds <= 15 for shot in result.plan.shots)
