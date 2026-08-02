@@ -109,6 +109,24 @@ def test_api_exposes_reviewable_social_draft_approvals(tmp_path) -> None:
     assert decision.json()["decision"] == "approved"
     assert client.get(f"/v1/jobs/{record.job_id}/approvals").json()[0]["platform"] == "wechat"
 
+    preview = client.post(
+        f"/v1/jobs/{record.job_id}/publish",
+        json={"platform": "wechat"},
+    )
+    assert preview.status_code == 200
+    assert preview.json()["status"] == "dry_run"
+    assert preview.json()["approved"] is True
+
+    publish = client.post(
+        f"/v1/jobs/{record.job_id}/publish",
+        json={"platform": "wechat", "dry_run": False},
+    )
+    assert publish.status_code == 200
+    assert publish.json()["status"] == "unavailable"
+    assert client.get(f"/v1/jobs/{record.job_id}/publish-audit").json()[-1]["action"] == (
+        "publish_unavailable"
+    )
+
     invalid_platform = client.post(
         f"/v1/jobs/{record.job_id}/approvals",
         json={"platform": "not-a-platform", "decision": "approved"},
