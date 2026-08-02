@@ -13,5 +13,6 @@ def test_registry_is_explicit_and_rejects_duplicates() -> None:
     registry.register(provider)
     assert registry.ids() == ("synthetic",)
     assert registry.get("synthetic") is provider
+    assert registry.descriptors()[0].kind == "video"
     with pytest.raises(ValueError):
         registry.register(provider)

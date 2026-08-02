@@ -6,6 +6,7 @@ server-side registration entry; the workflow must not import those vendors.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -24,17 +25,43 @@ class VideoProvider(Protocol):
         """Generate a video artifact from a provider-owned prompt."""
 
 
+@dataclass(frozen=True)
+class ProviderDescriptor:
+    """Safe provider metadata exposed to operators, never credentials."""
+
+    provider_id: str
+    kind: str
+    capabilities: tuple[str, ...] = ()
+    configured: bool = True
+
+
 class ProviderRegistry:
     def __init__(self) -> None:
         self._providers: dict[str, object] = {}
+        self._descriptors: dict[str, ProviderDescriptor] = {}
 
-    def register(self, provider: object) -> None:
+    def register(
+        self,
+        provider: object,
+        *,
+        kind: str = "video",
+        capabilities: tuple[str, ...] = (),
+        configured: bool = True,
+    ) -> None:
         provider_id = getattr(provider, "provider_id", None)
         if not isinstance(provider_id, str) or not provider_id:
             raise ValueError("provider must expose a non-empty provider_id")
+        if not kind or kind not in {"llm", "tts", "video"}:
+            raise ValueError("provider kind must be llm, tts or video")
         if provider_id in self._providers:
             raise ValueError(f"provider already registered: {provider_id}")
         self._providers[provider_id] = provider
+        self._descriptors[provider_id] = ProviderDescriptor(
+            provider_id=provider_id,
+            kind=kind,
+            capabilities=tuple(sorted(set(capabilities))),
+            configured=configured,
+        )
 
     def get(self, provider_id: str) -> object:
         try:
@@ -44,3 +71,6 @@ class ProviderRegistry:
 
     def ids(self) -> tuple[str, ...]:
         return tuple(sorted(self._providers))
+
+    def descriptors(self) -> tuple[ProviderDescriptor, ...]:
+        return tuple(self._descriptors[provider_id] for provider_id in self.ids())

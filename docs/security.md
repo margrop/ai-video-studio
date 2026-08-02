@@ -14,8 +14,11 @@
 - API input has a strict schema and unknown fields are rejected.
 - Provider/model/API key fields are server-owned and never accepted from the job request.
 - Error responses are coarse; raw upstream response bodies are not persisted.
+- Idempotency keys are stored only as SHA-256 fingerprints, never as raw keys.
+- Worker failure messages are truncated and redact common credential fields.
+- Queue state uses atomic rename/replace operations and leases for crash recovery.
 - The worker writes only generated artifacts and job metadata.
 - The default local demo uses a silent WAV and deterministic FFmpeg; no external network call is required.
 - The public repository contains no real credential, private media, or production endpoint.
 
-Before enabling a hosted provider, add server-side rate limits, cost budgets, concurrency limits and an explicit retention policy. Phase 1's file queue is for localhost or trusted development networks, not an internet-facing deployment.
+Before enabling a hosted provider, add server-side rate limits, cost budgets, concurrency limits and an explicit retention policy. The file queue is for localhost or trusted development networks, not an internet-facing deployment; Redis/Postgres and authenticated deployment are still required for multi-instance production use.

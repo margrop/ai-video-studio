@@ -8,29 +8,33 @@ from pathlib import Path
 
 import typer
 
-from packages.runtime import build_default_workflow
+from packages.runtime import AppRuntime, build_runtime
 from packages.storage import FileJobStore
 
 app = typer.Typer(add_completion=False, help="Process AI Video Studio render jobs.")
 
 
-async def process_once(store: FileJobStore) -> bool:
+async def process_once(store: FileJobStore, runtime: AppRuntime | None = None) -> bool:
     record = store.claim_next()
     if record is None:
         return False
     output_dir = store.artifacts_dir / str(record.job_id)
     try:
-        result = await build_default_workflow().run(record.request, output_dir)
+        app_runtime = runtime or build_runtime()
+        result = await app_runtime.workflow.run(record.request, output_dir)
         record.status = "succeeded"
         record.plan_path = result.plan_path.name
         record.subtitle_path = result.subtitle_path.name
         record.audio_path = result.audio_path.name
         record.video_path = result.video_path.name
     except Exception as exc:  # noqa: BLE001 - worker must convert failures to job state.
-        record.status = "failed"
-        record.error_code = "render_failed"
-        record.error_message = f"{type(exc).__name__}: {str(exc)[:400]}"
-    store.finish(record)
+        store.fail(
+            record,
+            error_code="render_failed",
+            error_message=f"{type(exc).__name__}: {str(exc)[:400]}",
+        )
+    else:
+        store.finish(record)
     return True
 
 
@@ -43,11 +47,12 @@ def run(
     ),
 ) -> None:
     """Process queued jobs until --once or Ctrl-C."""
-    store = FileJobStore(storage_root)
+    store = FileJobStore.from_env(storage_root)
+    runtime = build_runtime()
 
     async def loop() -> None:
         while True:
-            processed = await process_once(store)
+            processed = await process_once(store, runtime)
             if once:
                 return
             if not processed:
