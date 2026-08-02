@@ -8,6 +8,7 @@
 {
   "topic": "介绍 MCP",
   "source_markdown": "",
+  "source_url": null,
   "duration_seconds": 60,
   "language": "zh-CN",
   "voice": "neutral",
@@ -16,6 +17,12 @@
 ```
 
 The client cannot provide provider, model, prompt, key, retry, budget or output path controls.
+
+When `source_markdown` is empty, an optional `source_url` is fetched only when
+its host (and redirect target) matches the server-side
+`AIVS_SOURCE_ALLOWED_HOSTS` list. Embedded credentials, non-public IP literals,
+non-text responses and bodies over 2 MB are rejected. Markdown takes precedence
+when both fields are present.
 
 For safe client retries, send an `Idempotency-Key` header. The key is hashed
 for the local index and the raw value is never stored:
