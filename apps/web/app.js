@@ -75,9 +75,10 @@ function renderApprovals(approvals) {
     const current = latest[platform];
     const decision = current?.decision || "pending";
     const decisionLabel = { approved: "已通过", rejected: "已驳回", pending: "待审核" }[decision];
-    return `<div class="approval-row"><div><strong>${label}</strong><small>${decisionLabel}${current?.reviewer ? ` · ${escapeHtml(current.reviewer)}` : ""}</small></div><div class="approval-actions"><button class="button tiny" data-approval-platform="${platform}" data-approval-decision="approved" type="button">通过</button><button class="button tiny danger" data-approval-platform="${platform}" data-approval-decision="rejected" type="button">驳回</button></div></div>`;
+    return `<div class="approval-row"><div><strong>${label}</strong><small>${decisionLabel}${current?.reviewer ? ` · ${escapeHtml(current.reviewer)}` : ""}</small></div><div class="approval-actions"><button class="button tiny" data-approval-platform="${platform}" data-approval-decision="approved" type="button">通过</button><button class="button tiny danger" data-approval-platform="${platform}" data-approval-decision="rejected" type="button">驳回</button><button class="button tiny" data-publish-platform="${platform}" data-publish-dry-run="true" type="button">预览</button>${decision === "approved" ? `<button class="button tiny" data-publish-platform="${platform}" data-publish-dry-run="false" type="button">发布</button>` : ""}</div></div>`;
   }).join("");
   document.querySelectorAll("[data-approval-platform]").forEach((button) => button.addEventListener("click", () => decideApproval(button.dataset.approvalPlatform, button.dataset.approvalDecision)));
+  document.querySelectorAll("[data-publish-platform]").forEach((button) => button.addEventListener("click", () => publishDraft(button.dataset.publishPlatform, button.dataset.publishDryRun === "true")));
 }
 
 async function decideApproval(platform, decision) {
@@ -88,6 +89,21 @@ async function decideApproval(platform, decision) {
   } catch (error) {
     $("form-message").textContent = `审批失败：${error.message}`;
   }
+}
+
+async function publishDraft(platform, dryRun) {
+  if (!dryRun && !window.confirm("确认提交到已配置的外部发布 Provider？")) return;
+  try {
+    const result = await api(`/v1/jobs/${state.selectedJobId}/publish`, { method: "POST", body: JSON.stringify({ platform, dry_run: dryRun, actor: "dashboard-operator" }) });
+    $("form-message").textContent = dryRun ? `预览完成：${result.message}` : `发布结果：${result.status}（${result.message}）`;
+    await openDetail(state.selectedJobId);
+  } catch (error) {
+    $("form-message").textContent = `发布操作失败：${error.message}`;
+  }
+}
+
+function renderPublishAudit(events) {
+  $("publish-audit").innerHTML = events.length ? events.map((event) => `<li><span class="event-type">${escapeHtml(event.action)}</span><span>${escapeHtml(event.message)}</span><time>${formatDate(event.created_at)}</time></li>`).join("") : '<li class="muted">暂无发布审计记录</li>';
 }
 
 async function downloadArtifact(jobId, name) {
@@ -115,7 +131,11 @@ async function openDetail(jobId) {
   $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<button class="artifact" data-artifact-name="${name}" type="button">${label}<span>下载 ↗</span></button>`).join("") : '<p class="muted">任务成功后可下载产物</p>';
   document.querySelectorAll("[data-artifact-name]").forEach((button) => button.addEventListener("click", () => downloadArtifact(jobId, button.dataset.artifactName)));
   $("approvals").innerHTML = '<p class="muted">加载审批记录…</p>';
-  if (job.status === "succeeded") renderApprovals(await api(`/v1/jobs/${jobId}/approvals`));
+  if (job.status === "succeeded") {
+    const [approvals, audit] = await Promise.all([api(`/v1/jobs/${jobId}/approvals`), api(`/v1/jobs/${jobId}/publish-audit`)]);
+    renderApprovals(approvals);
+    renderPublishAudit(audit);
+  }
   else $("approvals").innerHTML = '<p class="muted">任务成功后可审核社交草稿</p>';
   $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
 }
