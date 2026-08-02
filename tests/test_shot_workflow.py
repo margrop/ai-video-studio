@@ -49,6 +49,11 @@ class FakeRenderer:
 def test_provider_workflow_generates_one_clip_per_story_shot(tmp_path) -> None:
     provider = RecordingVideoProvider()
     renderer = FakeRenderer()
+    updates: list[tuple[str, int, int, int, str]] = []
+
+    def on_progress(stage, completed_shots, total_shots, current_shot, message):
+        updates.append((stage, completed_shots, total_shots, current_shot, message))
+
     result = asyncio.run(
         RenderWorkflow(
             planner=StoryPlanner(),
@@ -58,6 +63,7 @@ def test_provider_workflow_generates_one_clip_per_story_shot(tmp_path) -> None:
         ).run(
             CreateJobRequest(topic="Shot based video", duration_seconds=60, use_ai=False),
             tmp_path,
+            progress_callback=on_progress,
         )
     )
 
@@ -68,3 +74,6 @@ def test_provider_workflow_generates_one_clip_per_story_shot(tmp_path) -> None:
     assert len(renderer.concat_calls[0][0]) == 8
     assert renderer.mux_calls[0][3] == 60
     assert result.video_path.read_bytes() == b"final-mp4"
+    assert updates[0][0] == "planning"
+    assert updates[-1][0] == "composition"
+    assert [update[1] for update in updates if update[0] == "video"][-1] == 8
