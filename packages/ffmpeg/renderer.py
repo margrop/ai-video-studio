@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -17,11 +19,40 @@ class FFmpegError(RuntimeError):
 
 class FFmpegRenderer:
     def __init__(self, *, ffmpeg_binary: str = "ffmpeg") -> None:
-        self.ffmpeg_binary = ffmpeg_binary
+        configured_binary = os.getenv("AIVS_FFMPEG_BINARY", "").strip()
+        self.ffmpeg_binary = configured_binary or ffmpeg_binary
 
     def _require_ffmpeg(self) -> None:
         if shutil.which(self.ffmpeg_binary) is None:
             raise FFmpegError(f"{self.ffmpeg_binary} was not found in PATH")
+
+    def _require_filter(self, filter_name: str) -> None:
+        """Fail early with an actionable message when a build lacks a filter."""
+
+        try:
+            completed = subprocess.run(
+                [self.ffmpeg_binary, "-hide_banner", "-filters"],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except FileNotFoundError as exc:
+            raise FFmpegError(f"{self.ffmpeg_binary} was not found in PATH") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise FFmpegError("FFmpeg capability check timed out") from exc
+        except subprocess.CalledProcessError as exc:
+            raise FFmpegError("FFmpeg capability check failed") from exc
+
+        output = f"{completed.stdout}\n{completed.stderr}"
+        filter_pattern = rf"(?m)^\s*[A-Za-z.]+\s+{re.escape(filter_name)}\s+"
+        if re.search(filter_pattern, output) is None:
+            hint = (
+                "Install a complete FFmpeg build with libfreetype "
+                "(macOS: brew reinstall ffmpeg), or set "
+                "AIVS_FFMPEG_BINARY to its absolute path."
+            )
+            raise FFmpegError(f"FFmpeg filter '{filter_name}' is unavailable. {hint}")
 
     def _run(self, args: list[str]) -> None:
         try:
@@ -55,6 +86,7 @@ class FFmpegRenderer:
         audio_path: Path | None = None,
     ) -> Path:
         self._require_ffmpeg()
+        self._require_filter("drawtext")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="aivs-render-") as temp_dir:
             workspace = Path(temp_dir)

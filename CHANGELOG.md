@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.1 — 2026-08-02
+
+- detect missing FFmpeg `drawtext` support before offline slideshow rendering;
+- expose an actionable macOS/libfreetype remediation message;
+- support `AIVS_FFMPEG_BINARY` for selecting a complete FFmpeg installation;
+- add regression tests for FFmpeg capability diagnostics.
+
 ## 0.18.0 — 2026-08-02
 
 - add the native MiniMax H3 asynchronous video Provider;
