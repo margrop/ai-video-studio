@@ -77,6 +77,13 @@ and worker temporary staging files remain below `AIVS_STORAGE_ROOT` unless a
 future catalog file adapter is configured. Generated MP4/SRT/audio/plan files
 can use the artifact backend described below.
 
+Asset bytes are uploaded through `PUT /v1/assets/{asset_id}/content`; the
+record's server-owned `storage_key` determines the destination. The endpoint
+enforces `AIVS_MAX_ASSET_BYTES` (50 MiB by default), writes atomically and
+records size plus SHA-256. PostgreSQL mode shares the metadata, but binary
+catalog files still require a shared volume for every worker that needs to
+read reference images.
+
 ## Artifact backends
 
 Artifact storage is selected independently with the service-owned
