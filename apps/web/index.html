@@ -50,6 +50,7 @@
               <label>语言<input id="language" name="language" value="zh-CN" maxlength="20" /></label>
               <label>声音<input id="voice" name="voice" value="neutral" maxlength="100" /></label>
             </div>
+            <label>品牌预设<select id="brand-preset" name="brand_preset_id"><option value="">使用模板默认</option></select></label>
             <label class="checkbox"><input id="use-ai" name="use_ai" type="checkbox" /> 使用已配置的 AI Planner</label>
             <button class="button primary" type="submit">加入流水线</button>
             <p id="form-message" class="form-message" role="status"></p>
@@ -92,7 +93,7 @@
         <div class="approval-panel"><h3>社交草稿审批（发布前必须人工批准）</h3><div id="approvals" class="approvals"></div><h3>发布审计</h3><ol id="publish-audit" class="events"></ol></div>
       </section>
 
-      <footer><span>AIVS 0.14 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
+      <footer><span>AIVS 0.15 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
     </main>
     <script type="module" src="/dashboard/app.js"></script>
   </body>
