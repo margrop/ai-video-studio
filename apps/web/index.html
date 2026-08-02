@@ -45,6 +45,7 @@
           <form id="job-form">
             <label>主题<input id="topic" name="topic" required maxlength="500" placeholder="用一分钟介绍 MCP" /></label>
             <label>文章内容<textarea id="source" name="source_markdown" maxlength="30000" rows="6" placeholder="可选：粘贴 Markdown 文章"></textarea></label>
+            <label>文章 URL（需服务端白名单）<input id="source-url" name="source_url" type="url" maxlength="2000" placeholder="https://example.com/article" /></label>
             <div class="form-row">
               <label>时长（秒）<input id="duration" name="duration_seconds" type="number" min="15" max="180" value="60" /></label>
               <label>语言<input id="language" name="language" value="zh-CN" maxlength="20" /></label>
@@ -93,7 +94,7 @@
         <div class="approval-panel"><h3>社交草稿审批（发布前必须人工批准）</h3><div id="approvals" class="approvals"></div><h3>发布审计</h3><ol id="publish-audit" class="events"></ol></div>
       </section>
 
-      <footer><span>AIVS 0.16 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
+      <footer><span>AIVS 0.17 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
     </main>
     <script type="module" src="/dashboard/app.js"></script>
   </body>
