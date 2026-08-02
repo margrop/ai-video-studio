@@ -31,7 +31,7 @@
 - reference asset IDs and character Prompt Builder integration
 - generic async video provider transport with safe polling/download boundary
 - RSS/Atom → video → social-draft workflow
-- generic provider registry and safe async video transport
+- generic provider registry, safe async video transport and shot-by-shot composition
 - vendor-specific image/video adapters, asset upload lifecycle, template
   versioning and brand presets remain extension work
 - provider capability discovery and usage/cost records are included
