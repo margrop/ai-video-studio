@@ -22,8 +22,13 @@ class VideoProvider(Protocol):
         duration_seconds: int,
         output_path: Path,
         reference_images: tuple[Path, ...] = (),
+        reference_image_urls: tuple[str, ...] = (),
     ) -> Path:
-        """Generate a video artifact from a provider-owned prompt."""
+        """Generate a video artifact from a provider-owned prompt.
+
+        ``reference_images`` are server-local files. Providers that require
+        public URLs may consume ``reference_image_urls`` instead.
+        """
 
 
 class VideoProviderError(RuntimeError):
