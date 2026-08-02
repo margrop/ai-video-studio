@@ -7,6 +7,7 @@ server-side registration entry; the workflow must not import those vendors.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Protocol
 
@@ -83,3 +84,24 @@ class ProviderRegistry:
 
     def descriptors(self) -> tuple[ProviderDescriptor, ...]:
         return tuple(self._descriptors[provider_id] for provider_id in self.ids())
+
+    def load_entry_points(self, *, group: str = "aivs.video_providers") -> tuple[str, ...]:
+        """Load installed provider plugins without importing vendors in the workflow."""
+
+        discovered = entry_points()
+        if hasattr(discovered, "select"):
+            selected = discovered.select(group=group)
+        else:
+            selected = discovered.get(group, ())
+        loaded: list[str] = []
+        for entry_point in selected:
+            factory = entry_point.load()
+            provider = factory() if isinstance(factory, type) else factory
+            capabilities = tuple(getattr(provider, "capabilities", ()))
+            self.register(
+                provider,
+                kind=getattr(provider, "provider_kind", "video"),
+                capabilities=capabilities,
+            )
+            loaded.append(provider.provider_id)
+        return tuple(sorted(loaded))

@@ -8,6 +8,18 @@
 4. Add synthetic tests for success, timeout, rate limit, invalid response and secret-like output.
 5. Document quota, cost, model availability and any required reference asset.
 
+An independently distributed adapter can expose an entry point without
+changing the core workflow:
+
+```toml
+[project.entry-points."aivs.video_providers"]
+my-provider = "my_package:Provider"
+```
+
+The provider class should expose `provider_id`, optional `provider_kind` and
+`capabilities`, then implement `VideoProvider.generate`. Set
+`AIVS_VIDEO_PROVIDER` to that server-owned ID to activate it.
+
 ## MiniMax H3
 
 `providers/minimax/MiniMaxH3Provider` treats H3 as a server-side OpenAI-compatible planner model. It returns structured JSON which is validated by `StoryPlan`. The base URL is configurable so a local OpenAI Gateway can sit between AIVS and MiniMax.

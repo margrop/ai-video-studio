@@ -14,7 +14,7 @@ from pathlib import Path
 
 from packages.library import AssetCatalog, CharacterCatalog, TemplateCatalog
 from packages.planner import StoryPlanner
-from packages.providers import ProviderRegistry
+from packages.providers import ProviderRegistry, VideoProvider
 from packages.providers.http_video import HTTPVideoProvider
 from packages.tts import SilentTTSProvider
 from packages.workflow import RenderWorkflow
@@ -33,7 +33,7 @@ class _OfflineVideoProvider:
 class AppRuntime:
     workflow: RenderWorkflow
     providers: ProviderRegistry
-    video_provider: HTTPVideoProvider | None
+    video_provider: VideoProvider | None
     assets: AssetCatalog
     characters: CharacterCatalog
     templates: TemplateCatalog
@@ -41,6 +41,7 @@ class AppRuntime:
 
 def build_runtime(library_root: Path | None = None) -> AppRuntime:
     registry = ProviderRegistry()
+    registry.load_entry_points()
     base_library_root = library_root or Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")) / "library"
     assets = AssetCatalog(base_library_root / "assets")
     characters = CharacterCatalog(base_library_root / "characters", assets)
@@ -75,9 +76,13 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
             capabilities=("speech-synthesis",),
         )
 
-    video_provider = None
+    video_provider: VideoProvider | None = None
     configured_video_id = os.getenv("AIVS_VIDEO_PROVIDER", "").strip()
-    if configured_video_id and all(
+    if configured_video_id and configured_video_id in registry.ids():
+        candidate = registry.get(configured_video_id)
+        if hasattr(candidate, "generate"):
+            video_provider = candidate  # type: ignore[assignment]
+    elif configured_video_id and all(
         os.getenv(key) for key in ("AIVS_VIDEO_BASE_URL", "AIVS_VIDEO_API_KEY", "AIVS_VIDEO_MODEL")
     ):
         video_provider = HTTPVideoProvider.from_env(provider_id=configured_video_id)

@@ -24,6 +24,7 @@
 - Character Library, Asset Library and template catalog foundation
 - reference asset IDs and character Prompt Builder integration
 - generic async video provider transport with safe polling/download boundary
+- RSS/Atom → video → social-draft workflow
 - vendor-specific image/video adapters
 - asset upload lifecycle, template versioning and brand presets
 - provider capability discovery and usage/cost records

@@ -48,6 +48,10 @@ aivs generate "用一分钟介绍 MCP" --no-ai --output artifacts/mcp-intro.mp4
 # 从技术文章生成
 aivs generate "AI Gateway 的作用" --source examples/tech-blog.md --no-ai \
   --output artifacts/ai-gateway.mp4
+
+# 从 RSS/Atom 新闻条目生成
+aivs rss https://example.com/feed.xml --item 0 --no-ai \
+  --output artifacts/news.mp4
 ```
 
 验证生成文件：
