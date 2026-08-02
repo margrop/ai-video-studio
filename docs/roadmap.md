@@ -17,7 +17,8 @@
 - idempotency-key index and job event stream
 - job list, stats and provider capability API
 - Web dashboard, usage/cost records and compose stack are included
-- Redis/Postgres backend remains the production-scale follow-up
+- Redis backend with reliable handoff, leases, retries and usage records
+- Postgres catalog/job metadata and object-storage artifacts remain follow-up
 
 ## Phase 3 — foundation completed
 

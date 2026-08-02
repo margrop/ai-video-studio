@@ -12,12 +12,12 @@ from packages.library import CatalogNotFound
 from packages.providers import VideoProviderError
 from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
-from packages.storage import FileJobStore
+from packages.storage import JobStore, build_job_store
 
 app = typer.Typer(add_completion=False, help="Process AI Video Studio render jobs.")
 
 
-async def process_once(store: FileJobStore, runtime: AppRuntime | None = None) -> bool:
+async def process_once(store: JobStore, runtime: AppRuntime | None = None) -> bool:
     record = store.claim_next()
     if record is None:
         return False
@@ -83,7 +83,7 @@ def run(
     ),
 ) -> None:
     """Process queued jobs until --once or Ctrl-C."""
-    store = FileJobStore.from_env(storage_root)
+    store = build_job_store(storage_root)
     runtime = build_runtime(store.root)
 
     async def loop() -> None:
