@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 — 2026-08-02
+
+- add a manual GitHub Actions Article-to-Video workflow;
+- validate repository-relative Markdown sources and upload the complete content package as a workflow artifact;
+- keep offline deterministic planning as the default and isolate optional planner secrets in GitHub Actions secrets.
+
 ## 0.6.0 — 2026-08-02
 
 - add append-only human approval records for social drafts;

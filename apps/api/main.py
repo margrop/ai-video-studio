@@ -44,7 +44,7 @@ def create_app(
 ) -> FastAPI:
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.6.0")
+    app = FastAPI(title="AI Video Studio API", version="0.7.0")
     approval_store = ApprovalStore(job_store.root / "approvals")
     authenticator = APIAuthenticator.from_env()
     rate_limiter = build_rate_limiter(job_store)
