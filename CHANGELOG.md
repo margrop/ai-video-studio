@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0 — 2026-08-02
+
+- add allowlisted remote Article → Video source URLs;
+- extract readable HTML/text content with a 2 MB limit and no embedded credentials;
+- keep Markdown precedence and require `AIVS_SOURCE_ALLOWED_HOSTS` before any
+  remote fetch to avoid turning the service into an open SSRF proxy;
+- expose `source_url` through API jobs, CLI, MCP and Dashboard.
+
 ## 0.16.0 — 2026-08-02
 
 - add versioned `shot-manifest-v1` state for provider-generated clips;
