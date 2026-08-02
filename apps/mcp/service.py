@@ -6,8 +6,16 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from apps.worker.main import process_once
-from packages.contracts.models import CreateJobRequest, StoryPlan
-from packages.publishing import write_social_drafts
+from packages.contracts.models import CreateJobRequest, SocialDraftBundle, StoryPlan
+from packages.publishing import (
+    ApprovalStore,
+    AuditStore,
+    PublishingService,
+    build_approval_store,
+    build_audit_store,
+    external_publishing_enabled,
+    write_social_drafts,
+)
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import ArtifactStore, JobStore, build_artifact_store, build_job_store
 
@@ -17,15 +25,26 @@ class AIVSToolService:
     store: JobStore
     runtime: AppRuntime
     artifact_store: ArtifactStore | None = None
+    approvals: ApprovalStore | None = None
+    audit: AuditStore | None = None
 
     def __post_init__(self) -> None:
         if self.artifact_store is None:
             self.artifact_store = build_artifact_store(self.store.root)
+        if self.approvals is None:
+            self.approvals = build_approval_store(self.store.root / "approvals")
+        if self.audit is None:
+            self.audit = build_audit_store(self.store.root / "publish-audit")
 
     @classmethod
     def from_env(cls) -> AIVSToolService:
         store = build_job_store()
-        return cls(store=store, runtime=build_runtime(store.root))
+        return cls(
+            store=store,
+            runtime=build_runtime(store.root),
+            approvals=build_approval_store(store.root / "approvals"),
+            audit=build_audit_store(store.root / "publish-audit"),
+        )
 
     def _artifact_paths(self, job_id: UUID) -> dict[str, str]:
         if self.artifact_store is None:  # pragma: no cover - initialized in __post_init__
@@ -106,3 +125,46 @@ class AIVSToolService:
         record.social_drafts_path = path.name
         self.store.save(record)
         return {"job_id": str(record.job_id), "artifact": str(path)}
+
+    async def publish_social_draft(
+        self,
+        *,
+        job_id: str,
+        platform: str,
+        actor: str = "agent",
+        dry_run: bool = True,
+    ) -> dict[str, object]:
+        record = self.store.get(UUID(job_id))
+        if record is None:
+            raise KeyError("job_not_found")
+        if record.status != "succeeded":
+            raise ValueError("job_not_ready")
+        if self.artifact_store is None or self.approvals is None or self.audit is None:
+            raise RuntimeError("publishing stores are not configured")
+        bundle = SocialDraftBundle.model_validate_json(
+            self.artifact_store.read_bytes(record.job_id, "social-drafts.json")
+        )
+        draft = next((item for item in bundle.drafts if item.platform == platform), None)
+        if draft is None:
+            raise ValueError("platform_not_in_social_drafts")
+        result = await PublishingService(
+            approvals=self.approvals,
+            audit=self.audit,
+            publishers=self.runtime.publishers,
+            enabled=external_publishing_enabled(),
+        ).publish(
+            job_id=record.job_id,
+            draft=draft,
+            actor=actor,
+            dry_run=dry_run,
+            video_path=self.artifact_store.local_path(record.job_id, "video.mp4"),
+        )
+        return result.model_dump(mode="json")
+
+    def list_publish_audit(self, job_id: str) -> list[dict[str, object]]:
+        if self.audit is None:
+            raise RuntimeError("audit store is not configured")
+        parsed_job_id = UUID(job_id)
+        if self.store.get(parsed_job_id) is None:
+            raise KeyError("job_not_found")
+        return [item.model_dump(mode="json") for item in self.audit.list(parsed_job_id)]
