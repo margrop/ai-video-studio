@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 
 from packages.contracts.models import CreateJobRequest
@@ -77,3 +78,19 @@ def test_provider_workflow_generates_one_clip_per_story_shot(tmp_path) -> None:
     assert updates[0][0] == "planning"
     assert updates[-1][0] == "composition"
     assert [update[1] for update in updates if update[0] == "video"][-1] == 8
+
+    resumed = asyncio.run(
+        RenderWorkflow(
+            planner=StoryPlanner(),
+            tts_provider=FakeTTS(),
+            renderer=renderer,
+            video_provider=provider,
+        ).run(
+            CreateJobRequest(topic="Shot based video", duration_seconds=60, use_ai=False),
+            tmp_path,
+        )
+    )
+    assert len(provider.calls) == 8
+    assert resumed.shot_manifest_path is not None
+    manifest = json.loads(resumed.shot_manifest_path.read_text())
+    assert all(item["status"] == "succeeded" for item in manifest["shots"])
