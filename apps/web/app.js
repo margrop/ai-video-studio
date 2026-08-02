@@ -63,6 +63,13 @@ function renderProviders(providers) {
     </div>`).join("") || '<p class="muted">暂无 Provider</p>';
 }
 
+function renderBrandPresets(presets) {
+  const select = $("brand-preset");
+  const current = select.value;
+  select.innerHTML = '<option value="">使用模板默认</option>' + presets.map((preset) => `<option value="${escapeHtml(preset.brand_preset_id)}">${escapeHtml(preset.name)} · v${preset.version}</option>`).join("");
+  if (presets.some((preset) => preset.brand_preset_id === current)) select.value = current;
+}
+
 function renderJobs() {
   const filter = $("status-filter").value;
   const jobs = filter ? state.jobs.filter((job) => job.status === filter) : state.jobs;
@@ -158,17 +165,19 @@ async function openDetail(jobId) {
 async function refresh() {
   try {
     const filter = $("status-filter").value;
-    const [stats, usage, jobs, providers] = await Promise.all([
+    const [stats, usage, jobs, providers, brandPresets] = await Promise.all([
       api("/v1/stats"),
       api("/v1/usage"),
       api(`/v1/jobs?limit=100${filter ? `&status=${encodeURIComponent(filter)}` : ""}`),
       api("/v1/providers"),
+      api("/v1/brand-presets"),
     ]);
     renderMetrics(stats);
     renderUsage(usage);
     state.jobs = jobs;
     renderJobs();
     renderProviders(providers.providers);
+    renderBrandPresets(brandPresets);
     $("connection").textContent = "已连接";
     $("connection").className = "pill connected";
     if (state.selectedJobId) await openDetail(state.selectedJobId);
@@ -189,6 +198,7 @@ $("job-form").addEventListener("submit", async (event) => {
     duration_seconds: Number($("duration").value),
     language: $("language").value,
     voice: $("voice").value,
+    brand_preset_id: $("brand-preset").value || null,
     use_ai: $("use-ai").checked,
   };
   try {
