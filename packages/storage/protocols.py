@@ -10,6 +10,7 @@ from packages.contracts.models import (
     CreateJobRequest,
     JobEvent,
     JobRecord,
+    ProgressStage,
     UsageRecord,
     UsageSummary,
 )
@@ -45,6 +46,17 @@ class JobStore(Protocol):
     def get(self, job_id: UUID) -> JobRecord | None: ...
 
     def save(self, record: JobRecord) -> JobRecord: ...
+
+    def update_progress(
+        self,
+        record: JobRecord,
+        *,
+        stage: ProgressStage,
+        completed_shots: int = 0,
+        total_shots: int = 0,
+        current_shot: int = 0,
+        message: str = "",
+    ) -> JobRecord: ...
 
     def claim_next(self) -> JobRecord | None: ...
 
