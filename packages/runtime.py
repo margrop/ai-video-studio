@@ -90,7 +90,7 @@ def build_runtime(library_root: Path | None = None) -> AppRuntime:
         registry.register(
             video_provider,
             kind="video",
-            capabilities=("async-generation", "remote-download"),
+            capabilities=("async-generation", "remote-download", "shot-generation"),
         )
     else:
         registry.register(
