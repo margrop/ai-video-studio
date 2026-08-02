@@ -23,7 +23,7 @@ flowchart TD
 | Planner | produce versioned Story Plan | execute side effects or publish content |
 | Provider adapter | translate one vendor contract | leak raw errors or secrets |
 | Subtitle/FFmpeg | deterministic media assembly | infer business content |
-| Storage | job state and artifacts | persist credentials or raw provider responses |
+| Storage | job state, staging and published artifacts | persist credentials or raw provider responses |
 
 ## Reusable content catalogs
 
@@ -59,8 +59,17 @@ FastAPI → Redis queue → reliable processing list → worker
 ```
 
 The API contract and workflow inputs remain stable when switching backends.
-Redis shares queue metadata, while generated files and local catalogs still
-need a shared volume or a future object-storage/catalog adapter.
+Redis shares queue metadata. `ArtifactStore` keeps a local staging boundary and
+can publish generated files to S3/MinIO, while catalogs and approvals still
+need a shared volume until the Postgres catalog adapter lands.
+
+With object storage enabled, the runtime boundary is:
+
+```text
+FastAPI → Redis queue → worker → local staging → S3/MinIO
+     ↑                                      ↓
+     └──── authenticated artifact stream ───┘
+```
 
 ## Provider registry
 

@@ -21,7 +21,8 @@
 - optional API-key authentication and process/Redis-shared rate limiting
 - append-only social draft approval records and Dashboard review controls
 - manual Article → Video GitHub Actions workflow with artifact packaging
-- Postgres catalog/job metadata and object-storage artifacts remain follow-up
+- S3/MinIO-compatible generated artifact storage with authenticated API streaming
+- Postgres catalog/job metadata remains follow-up
 
 ## Phase 3 — foundation completed
 

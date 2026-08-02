@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 — 2026-08-02
+
+- add a provider-neutral artifact store contract with filesystem and S3-compatible backends;
+- stage generated files locally, publish them to S3/MinIO after a successful render, and stream protected API downloads from object storage;
+- add Docker, Compose, environment and deployment guidance for object-storage artifacts while keeping catalogs and approvals on the service volume.
+
 ## 0.7.0 — 2026-08-02
 
 - add a manual GitHub Actions Article-to-Video workflow;

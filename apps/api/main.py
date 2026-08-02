@@ -8,7 +8,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request, status
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from packages.contracts.models import (
     AssetRecord,
@@ -32,7 +32,14 @@ from packages.library import CatalogNotFound
 from packages.publishing import ApprovalStore
 from packages.runtime import AppRuntime, build_runtime
 from packages.security import APIAuthenticator, build_rate_limiter, security_headers
-from packages.storage import JobStore, build_job_store
+from packages.storage import (
+    ArtifactNotFound,
+    ArtifactStore,
+    ArtifactStoreError,
+    JobStore,
+    build_artifact_store,
+    build_job_store,
+)
 
 WEB_ROOT = Path(__file__).parents[1] / "web"
 
@@ -41,10 +48,12 @@ def create_app(
     *,
     store: JobStore | None = None,
     runtime: AppRuntime | None = None,
+    artifact_store: ArtifactStore | None = None,
 ) -> FastAPI:
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.7.0")
+    generated_artifacts = artifact_store or build_artifact_store(job_store.root)
+    app = FastAPI(title="AI Video Studio API", version="0.8.0")
     approval_store = ApprovalStore(job_store.root / "approvals")
     authenticator = APIAuthenticator.from_env()
     rate_limiter = build_rate_limiter(job_store)
@@ -204,11 +213,14 @@ def create_app(
             raise HTTPException(status_code=404, detail="job_not_found")
         if record.status != "succeeded":
             raise HTTPException(status_code=409, detail="job_not_ready")
-        path = job_store.artifacts_dir / str(job_id) / "social-drafts.json"
-        if not path.is_file():
-            raise HTTPException(status_code=404, detail="social_drafts_not_found")
         try:
-            return SocialDraftBundle.model_validate_json(path.read_text(encoding="utf-8"))
+            content = generated_artifacts.read_bytes(job_id, "social-drafts.json")
+        except ArtifactNotFound as exc:
+            raise HTTPException(status_code=404, detail="social_drafts_not_found") from exc
+        except ArtifactStoreError as exc:
+            raise HTTPException(status_code=503, detail="social_drafts_unavailable") from exc
+        try:
+            return SocialDraftBundle.model_validate_json(content)
         except ValueError as exc:
             raise HTTPException(status_code=500, detail="social_drafts_invalid") from exc
 
@@ -237,7 +249,7 @@ def create_app(
         return approval_store.decide(job_id, request)
 
     @app.get("/v1/jobs/{job_id}/artifacts/{artifact_name}")
-    async def get_artifact(job_id: UUID, artifact_name: str) -> FileResponse:
+    async def get_artifact(job_id: UUID, artifact_name: str) -> Response:
         record = job_store.get(job_id)
         if record is None:
             raise HTTPException(status_code=404, detail="job_not_found")
@@ -252,10 +264,6 @@ def create_app(
         }
         if artifact_name not in allowed:
             raise HTTPException(status_code=404, detail="artifact_not_found")
-        artifact_dir = job_store.artifacts_dir / str(job_id)
-        artifact_path = artifact_dir / artifact_name
-        if not artifact_path.is_file():
-            raise HTTPException(status_code=404, detail="artifact_not_found")
         media_type = (
             "video/mp4"
             if artifact_name.endswith(".mp4")
@@ -263,9 +271,28 @@ def create_app(
             if artifact_name.endswith(".json")
             else "application/octet-stream"
         )
-        return FileResponse(artifact_path, media_type=media_type, filename=artifact_name)
+        try:
+            local_path = generated_artifacts.local_path(job_id, artifact_name)
+            if local_path is not None and local_path.is_file():
+                return FileResponse(local_path, media_type=media_type, filename=artifact_name)
+            if not generated_artifacts.exists(job_id, artifact_name):
+                raise HTTPException(status_code=404, detail="artifact_not_found")
+            return StreamingResponse(
+                generated_artifacts.iter_bytes(job_id, artifact_name),
+                media_type=media_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{artifact_name}"',
+                },
+            )
+        except HTTPException:
+            raise
+        except ArtifactNotFound as exc:
+            raise HTTPException(status_code=404, detail="artifact_not_found") from exc
+        except (ArtifactStoreError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail="artifact_unavailable") from exc
 
     app.state.job_store = job_store
+    app.state.artifact_store = generated_artifacts
     app.state.runtime = app_runtime
     app.state.approvals = approval_store
     app.state.workflow_factory = lambda: app_runtime.workflow
