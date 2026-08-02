@@ -202,6 +202,16 @@ SocialPlatform = Literal[
 ]
 
 
+class PublisherStatus(StrictModel):
+    publisher_id: str = Field(min_length=1, max_length=100)
+    platform: SocialPlatform
+    configured: bool = True
+
+
+class PublisherListResponse(StrictModel):
+    publishers: list[PublisherStatus] = Field(default_factory=list, max_length=100)
+
+
 class SocialDraft(StrictModel):
     platform: SocialPlatform
     title: str = Field(min_length=1, max_length=200)
@@ -233,7 +243,53 @@ class SocialApprovalRecord(SocialApprovalRequest):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class PublishSocialDraftRequest(StrictModel):
+    """Request a preview or a gated external publish attempt."""
+
+    platform: SocialPlatform
+    dry_run: bool = True
+    actor: str = Field(default="agent", min_length=1, max_length=100)
+
+
+PublishStatus = Literal["dry_run", "blocked", "unavailable", "published", "failed"]
+
+
+class PublishSocialDraftResponse(StrictModel):
+    schema_version: Literal["publish-result-v1"] = "publish-result-v1"
+    job_id: UUID
+    platform: SocialPlatform
+    status: PublishStatus
+    dry_run: bool
+    approval_required: bool = True
+    approved: bool = False
+    publisher_id: str | None = Field(default=None, max_length=100)
+    external_id: str | None = Field(default=None, max_length=300)
+    audit_id: UUID
+    message: str = Field(default="", max_length=500)
+
+
+AuditAction = Literal[
+    "publish_dry_run",
+    "publish_blocked",
+    "publish_unavailable",
+    "publish_succeeded",
+    "publish_failed",
+]
+
+
+class PublishAuditRecord(StrictModel):
+    audit_id: UUID = Field(default_factory=uuid4)
+    job_id: UUID
+    platform: SocialPlatform
+    action: AuditAction
+    actor: str = Field(default="agent", min_length=1, max_length=100)
+    dry_run: bool
+    message: str = Field(default="", max_length=500)
+    external_id: str | None = Field(default=None, max_length=300)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.9.0"
+    version: str = "0.10.0"
