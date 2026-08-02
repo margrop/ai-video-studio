@@ -13,6 +13,7 @@ from packages.providers import VideoProviderError
 from packages.publishing import write_social_drafts
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import ArtifactStore, JobStore, build_artifact_store, build_job_store
+from packages.workflow import SourceError
 
 app = typer.Typer(add_completion=False, help="Process AI Video Studio render jobs.")
 
@@ -91,6 +92,14 @@ async def process_once(
         store.fail(
             record,
             error_code="invalid_job_reference",
+            error_message=str(exc),
+            retryable=False,
+            provider_id="pipeline",
+        )
+    except SourceError as exc:
+        store.fail(
+            record,
+            error_code="source_error",
             error_message=str(exc),
             retryable=False,
             provider_id="pipeline",
