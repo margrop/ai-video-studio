@@ -68,6 +68,17 @@ class AssetCatalog(_JsonStore):
             return None
         return AssetRecord.model_validate_json(path.read_text(encoding="utf-8"))
 
+    def local_path(self, asset_id: UUID) -> Path | None:
+        """Return a server-owned imported file path, never a user path."""
+
+        record = self.get(asset_id)
+        if record is None or not record.storage_key:
+            return None
+        candidate = (self.files_dir / record.storage_key).resolve()
+        if self.files_dir.resolve() not in candidate.parents or not candidate.is_file():
+            return None
+        return candidate
+
     def create(self, request: CreateAssetRequest) -> AssetRecord:
         record = AssetRecord(**request.model_dump())
         self._save(record)

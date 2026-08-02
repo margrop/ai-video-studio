@@ -47,6 +47,7 @@ class RenderWorkflow:
         output_dir: Path,
         *,
         character_prompt: str = "",
+        reference_images: tuple[Path, ...] = (),
         prompt_config: Mapping[str, str] | None = None,
     ) -> RenderResult:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -80,10 +81,18 @@ class RenderWorkflow:
             )
         else:
             provider_video_path = output_dir / "provider-video.mp4"
-            provider_prompt = "\n".join(shot.prompt for shot in result.plan.shots)
-            await self.video_provider.generate(
-                prompt=provider_prompt,
-                duration_seconds=request.duration_seconds,
+            shot_paths: list[Path] = []
+            for index, shot in enumerate(result.plan.shots):
+                shot_path = output_dir / f"provider-shot-{index + 1:02d}.mp4"
+                await self.video_provider.generate(
+                    prompt=shot.prompt,
+                    duration_seconds=round(shot.duration_seconds),
+                    output_path=shot_path,
+                    reference_images=reference_images,
+                )
+                shot_paths.append(shot_path)
+            await self.renderer.concat_videos_async(
+                video_paths=tuple(shot_paths),
                 output_path=provider_video_path,
             )
             video_path = await self.renderer.mux_audio_async(

@@ -30,16 +30,23 @@ async def process_once(
     app_runtime = runtime or build_runtime(store.root)
     try:
         character_prompt = ""
+        reference_images: list[Path] = []
         if record.request.character_id is not None:
             character = app_runtime.characters.get(record.request.character_id)
             if character is None:
                 raise CatalogNotFound(f"character is not registered: {record.request.character_id}")
             character_prompt = character.prompt
+            reference_images = [
+                path
+                for asset_id in character.reference_asset_ids
+                if (path := app_runtime.assets.local_path(asset_id)) is not None
+            ]
         prompt_config = app_runtime.templates.prompt_config(record.request.template_id)
         result = await app_runtime.workflow.run(
             record.request,
             output_dir,
             character_prompt=character_prompt,
+            reference_images=tuple(reference_images),
             prompt_config=prompt_config,
         )
         record.status = "succeeded"

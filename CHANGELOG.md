@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0 — 2026-08-02
+
+- enforce 4–15 second contiguous Story Plan shots;
+- generate provider video one shot at a time and concatenate clips before narration muxing;
+- pass server-owned Character reference images through the shot boundary;
+- add shot-generation capability metadata and workflow tests.
+
 ## 0.10.0 — 2026-08-02
 
 - add PostgreSQL-backed Asset/Character catalogs and approval metadata;

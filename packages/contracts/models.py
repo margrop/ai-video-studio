@@ -19,7 +19,7 @@ class StrictModel(BaseModel):
 class Shot(StrictModel):
     id: str = Field(min_length=1, max_length=64)
     start_seconds: float = Field(ge=0, le=3600)
-    duration_seconds: float = Field(gt=0, le=180)
+    duration_seconds: float = Field(ge=4, le=15)
     narration: str = Field(min_length=1, max_length=2000)
     visual: str = Field(min_length=1, max_length=1000)
     camera: str = Field(default="medium shot", max_length=300)
@@ -46,9 +46,11 @@ class StoryPlan(StrictModel):
         for shot in self.shots:
             if shot.start_seconds + 0.001 < previous_end:
                 raise ValueError("shots must have a non-overlapping, increasing timeline")
+            if abs(shot.start_seconds - previous_end) > 0.5:
+                raise ValueError("shots must form a contiguous timeline")
             previous_end = shot.start_seconds + shot.duration_seconds
-        if previous_end > self.target_duration_seconds + 0.5:
-            raise ValueError("shots exceed target_duration_seconds")
+        if abs(previous_end - self.target_duration_seconds) > 0.5:
+            raise ValueError("shots must cover target_duration_seconds")
         return self
 
 
@@ -292,4 +294,4 @@ class PublishAuditRecord(StrictModel):
 class HealthResponse(StrictModel):
     status: Literal["ok"] = "ok"
     service: str = "ai-video-studio-api"
-    version: str = "0.10.0"
+    version: str = "0.11.0"

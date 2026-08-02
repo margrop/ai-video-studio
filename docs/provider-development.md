@@ -17,7 +17,9 @@ my-provider = "my_package:Provider"
 ```
 
 The provider class should expose `provider_id`, optional `provider_kind` and
-`capabilities`, then implement `VideoProvider.generate`. Set
+`capabilities`, then implement `VideoProvider.generate`. A provider-backed
+workflow calls this method once per validated Story Plan shot, with a 4–15
+second duration and the server-owned character reference images. Set
 `AIVS_VIDEO_PROVIDER` to that server-owned ID to activate it.
 
 ## MiniMax H3
@@ -33,4 +35,7 @@ transport for providers with compatible semantics. It is opt-in through
 server-owned `AIVS_VIDEO_*` settings and enforces a download-host allow-list;
 it is not a vendor-specific implementation. Kling, Veo, Runway and OpenAI
 adapters should subclass or replace this transport when their API contracts
-differ, then add success, timeout, failed-job and unsafe-URL tests.
+differ, then add success, timeout, failed-job and unsafe-URL tests. The core
+workflow concatenates shot clips before attaching the single narration track,
+so an adapter must not silently turn a one-minute request into one 60-second
+model invocation.

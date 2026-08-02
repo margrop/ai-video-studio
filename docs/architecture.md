@@ -37,7 +37,12 @@ asset/character metadata while binary files remain server-owned.
 
 ## Provider-neutral contract
 
-The current `StoryPlan` is the handoff point shared by future workflows. A video provider can consume each shot's `prompt`, while local FFmpeg can render the same plan as a reviewable slideshow. This keeps the first release useful without pretending that a hosted video model is already configured.
+The current `StoryPlan` is the handoff point shared by future workflows. A
+video provider consumes each shot's `prompt` independently (4–15 seconds),
+while local FFmpeg can render the same plan as a reviewable slideshow. Provider
+clips are concatenated and the narration is muxed once at the composition
+boundary. This keeps the first release useful without pretending that a hosted
+video model is already configured.
 
 ## Runtime topology
 

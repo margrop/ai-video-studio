@@ -27,6 +27,10 @@ def test_asset_and_character_catalogs_keep_reusable_server_owned_records(tmp_pat
     )
 
     assert assets.get(asset.asset_id).sha256 is not None
+    assert (
+        assets.local_path(asset.asset_id)
+        == (tmp_path / "assets" / "files" / "brand" / "logo.svg").resolve()
+    )
     assert characters.get(character.character_id).prompt.startswith("consistent")
 
 
