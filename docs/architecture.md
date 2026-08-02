@@ -97,6 +97,11 @@ The API exposes only provider IDs, capabilities and configured status. The
 workflow receives concrete interfaces, while operators can inspect the active
 runtime without learning or submitting vendor credentials.
 
+Server-side routing can select a provider by kind and required capabilities;
+public job input still cannot name a provider. The built-in vendor directories
+are transport-compatible scaffolds, not claims that a vendor's current API
+contract, quota or credential flow has been verified.
+
 ## Publishing boundary
 
 Social drafts are content artifacts, not publication receipts. The publishing
