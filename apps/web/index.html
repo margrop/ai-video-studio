@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Video Studio · Control Room</title>
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">AI VIDEO STUDIO</p>
+          <h1>内容流水线控制台</h1>
+          <p class="muted">Article → Story Plan → Voice → Video</p>
+        </div>
+        <div class="topbar-actions">
+          <span id="connection" class="pill">连接中</span>
+          <button id="refresh" class="button secondary" type="button">刷新</button>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="运行统计">
+        <article class="metric-card"><span>排队中</span><strong id="metric-queued">—</strong></article>
+        <article class="metric-card"><span>运行中</span><strong id="metric-running">—</strong></article>
+        <article class="metric-card"><span>已完成</span><strong id="metric-succeeded">—</strong></article>
+        <article class="metric-card"><span>失败</span><strong id="metric-failed">—</strong></article>
+        <article class="metric-card accent"><span>队列深度</span><strong id="metric-depth">—</strong></article>
+      </section>
+
+      <section class="grid">
+        <article class="panel create-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">NEW JOB</p>
+              <h2>创建内容任务</h2>
+            </div>
+            <span class="safe-label">服务端 Provider</span>
+          </div>
+          <form id="job-form">
+            <label>主题<input id="topic" name="topic" required maxlength="500" placeholder="用一分钟介绍 MCP" /></label>
+            <label>文章内容<textarea id="source" name="source_markdown" maxlength="30000" rows="6" placeholder="可选：粘贴 Markdown 文章"></textarea></label>
+            <div class="form-row">
+              <label>时长（秒）<input id="duration" name="duration_seconds" type="number" min="15" max="180" value="60" /></label>
+              <label>语言<input id="language" name="language" value="zh-CN" maxlength="20" /></label>
+              <label>声音<input id="voice" name="voice" value="neutral" maxlength="100" /></label>
+            </div>
+            <label class="checkbox"><input id="use-ai" name="use_ai" type="checkbox" /> 使用已配置的 AI Planner</label>
+            <button class="button primary" type="submit">加入流水线</button>
+            <p id="form-message" class="form-message" role="status"></p>
+          </form>
+        </article>
+
+        <article class="panel provider-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">RUNTIME</p><h2>Provider 能力</h2></div>
+          </div>
+          <div id="providers" class="provider-list"><p class="muted">加载中…</p></div>
+          <div class="notice">密钥、模型和重试策略由服务端配置，任务请求不能覆盖。</div>
+        </article>
+      </section>
+
+      <section class="panel jobs-panel">
+        <div class="panel-heading jobs-heading">
+          <div><p class="eyebrow">JOBS</p><h2>最近任务</h2></div>
+          <select id="status-filter" aria-label="按状态筛选">
+            <option value="">全部状态</option>
+            <option value="queued">排队中</option>
+            <option value="running">运行中</option>
+            <option value="succeeded">已完成</option>
+            <option value="failed">失败</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>主题</th><th>状态</th><th>尝试</th><th>更新时间</th><th>操作</th></tr></thead>
+            <tbody id="jobs"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="detail" class="panel detail-panel hidden">
+        <div class="panel-heading"><div><p class="eyebrow">JOB DETAIL</p><h2 id="detail-title">任务详情</h2></div><button id="close-detail" class="button secondary" type="button">关闭</button></div>
+        <div id="detail-meta" class="detail-meta"></div>
+        <div class="detail-columns"><div><h3>事件</h3><ol id="events" class="events"></ol></div><div><h3>产物</h3><div id="artifacts" class="artifacts"></div></div></div>
+      </section>
+
+      <footer><span>AIVS 0.2 · 本地控制台</span><a href="/docs" target="_blank" rel="noreferrer">API Docs</a></footer>
+    </main>
+    <script type="module" src="/dashboard/app.js"></script>
+  </body>
+</html>
