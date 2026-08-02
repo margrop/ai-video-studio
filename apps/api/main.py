@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 
 from packages.contracts.models import (
     AssetRecord,
+    BrandPresetSummary,
     CharacterRecord,
     CreateAssetRequest,
     CreateCharacterRequest,
@@ -67,7 +68,7 @@ def create_app(
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
     generated_artifacts = artifact_store or build_artifact_store(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.14.0")
+    app = FastAPI(title="AI Video Studio API", version="0.15.0")
     approval_store = approval_store or build_approval_store(job_store.root / "approvals")
     audit_store = audit_store or build_audit_store(job_store.root / "publish-audit")
     publishing_service = PublishingService(
@@ -135,6 +136,8 @@ def create_app(
     ) -> JobRecord:
         try:
             app_runtime.templates.get(request.template_id)
+            if request.brand_preset_id is not None:
+                app_runtime.templates.brand_presets.get(request.brand_preset_id)
             if (
                 request.character_id is not None
                 and app_runtime.characters.get(request.character_id) is None
@@ -205,6 +208,10 @@ def create_app(
     @app.get("/v1/templates", response_model=list[TemplateSummary])
     async def get_templates() -> list[TemplateSummary]:
         return app_runtime.templates.list()
+
+    @app.get("/v1/brand-presets", response_model=list[BrandPresetSummary])
+    async def get_brand_presets() -> list[BrandPresetSummary]:
+        return app_runtime.templates.brand_presets.list()
 
     @app.get("/v1/assets", response_model=list[AssetRecord])
     async def get_assets(limit: int = Query(default=100, ge=1, le=200)) -> list[AssetRecord]:
