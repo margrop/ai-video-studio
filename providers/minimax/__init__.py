@@ -1,28 +1,26 @@
-"""MiniMax adapters.
-
-The H3 adapter is an OpenAI-compatible text planner adapter. Video generation
-is intentionally a separate capability so the content workflow can use local
-FFmpeg, a hosted video model, or a future MiniMax video endpoint.
-"""
+"""MiniMax adapters for the NewAPI-backed planner, TTS and native H3 video."""
 
 from __future__ import annotations
 
 import os
 
 from packages.llm import OpenAICompatibleLLMProvider
-from packages.providers.http_video import HTTPVideoProvider
 from packages.tts.openai_compatible import OpenAICompatibleTTSProvider
 
+from .video import MiniMaxH3VideoProvider
 
-class MiniMaxH3Provider(OpenAICompatibleLLMProvider):
-    provider_id = "minimax-h3"
+
+class MiniMaxLLMProvider(OpenAICompatibleLLMProvider):
+    """OpenAI-compatible text model, normally routed through NewAPI."""
+
+    provider_id = "minimax-llm"
 
     def __init__(
         self,
         *,
         base_url: str,
         api_key: str,
-        model: str = "MiniMax-H3",
+        model: str = "minimax-latest",
     ) -> None:
         super().__init__(
             provider_id=self.provider_id,
@@ -32,11 +30,11 @@ class MiniMaxH3Provider(OpenAICompatibleLLMProvider):
         )
 
     @classmethod
-    def from_env(cls) -> MiniMaxH3Provider:
+    def from_env(cls) -> MiniMaxLLMProvider:
         return cls(
             base_url=os.getenv("AIVS_LLM_BASE_URL", "http://127.0.0.1:3001/v1"),
             api_key=os.getenv("AIVS_LLM_API_KEY", ""),
-            model=os.getenv("AIVS_LLM_MODEL", "MiniMax-H3"),
+            model=os.getenv("AIVS_LLM_MODEL", "minimax-latest"),
         )
 
 
@@ -52,19 +50,16 @@ class MiniMaxTTSProvider(OpenAICompatibleTTSProvider):
         )
 
 
-class MiniMaxVideoProvider(HTTPVideoProvider):
-    """Transport-compatible MiniMax video scaffold.
-
-    The endpoint contract remains server-configured until the vendor-specific
-    request and response shape is verified. It deliberately reuses only the
-    generic submit/poll/download boundary.
-    """
-
-    provider_id = "minimax-video"
-
-    @classmethod
-    def from_env(cls) -> MiniMaxVideoProvider:
-        return super().from_env(provider_id=cls.provider_id, env_prefix="AIVS_MINIMAX_VIDEO")
+# Backwards-compatible import name. H3 is a video model; the planner itself
+# uses the text model selected by AIVS_LLM_MODEL through the configured gateway.
+MiniMaxH3Provider = MiniMaxLLMProvider
+MiniMaxVideoProvider = MiniMaxH3VideoProvider
 
 
-__all__ = ["MiniMaxH3Provider", "MiniMaxTTSProvider", "MiniMaxVideoProvider"]
+__all__ = [
+    "MiniMaxH3Provider",
+    "MiniMaxH3VideoProvider",
+    "MiniMaxLLMProvider",
+    "MiniMaxTTSProvider",
+    "MiniMaxVideoProvider",
+]
