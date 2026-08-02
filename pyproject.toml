@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=75,<81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-video-studio"
+version = "0.1.0"
+description = "Provider-neutral AI content pipeline: article to video, voice and social-ready assets."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Margrop" }]
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "pydantic>=2.8,<3",
+  "typer>=0.15,<1",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.24,<1",
+  "ruff>=0.9,<1",
+]
+
+[project.scripts]
+aivs = "apps.cli.main:app"
+aivs-worker = "apps.worker.main:app"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps*", "packages*", "providers*", "schemas*"]
+exclude = ["tests*", "artifacts*", ".aivs*"]
+
+[tool.setuptools.package-data]
+schemas = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".aivs", "artifacts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

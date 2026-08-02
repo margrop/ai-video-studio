@@ -1,0 +1,17 @@
+{
+  "template_id": "tech-blog-v1",
+  "title_style": "clear and practical",
+  "target_duration_seconds": 60,
+  "language": "zh-CN",
+  "voice": "neutral",
+  "prompt": {
+    "base": "clean vertical short-video composition, coherent visual language",
+    "camera": "slow push-in",
+    "lighting": "soft natural light, high legibility, controlled contrast",
+    "negative": "blurry, distorted text, extra limbs, watermark, logo artifacts"
+  },
+  "review": {
+    "requires_human_approval_before_publish": true,
+    "allow_external_posting": false
+  }
+}
