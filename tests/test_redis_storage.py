@@ -148,6 +148,27 @@ def test_redis_store_transitions_and_idempotency(tmp_path) -> None:
     assert store.usage.summary().successful_jobs == 1
 
 
+def test_redis_store_persists_shot_progress(tmp_path) -> None:
+    store = RedisJobStore(FakeRedis(), tmp_path / "state", retry_backoff_seconds=0)
+    created = store.create(CreateJobRequest(topic="Redis progress", use_ai=False))
+    claimed = store.claim_next()
+    assert claimed is not None
+
+    store.update_progress(
+        claimed,
+        stage="video",
+        completed_shots=4,
+        total_shots=8,
+        current_shot=5,
+        message="已完成 Shot 4/8",
+    )
+    observed = store.get(created.job_id)
+    assert observed is not None
+    assert observed.progress.percent == 58
+    assert observed.progress.current_shot == 5
+    assert store.events(created.job_id)[-1].event_type == "progress"
+
+
 def test_redis_store_retries_and_recovers_expired_leases(tmp_path) -> None:
     store = RedisJobStore(
         FakeRedis(),
