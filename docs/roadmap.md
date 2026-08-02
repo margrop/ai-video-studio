@@ -19,6 +19,7 @@
 - Web dashboard, usage/cost records and compose stack are included
 - Redis backend with reliable handoff, leases, retries and usage records
 - optional API-key authentication and process/Redis-shared rate limiting
+- append-only social draft approval records and Dashboard review controls
 - Postgres catalog/job metadata and object-storage artifacts remain follow-up
 
 ## Phase 3 — foundation completed

@@ -45,6 +45,8 @@ worker leases are recovered after a process crash.
 - `GET /v1/templates` lists server-owned workflow templates;
 - `GET/POST /v1/assets` manages reusable asset metadata;
 - `GET/POST /v1/characters` manages reusable character profiles and reference IDs.
+- `GET /v1/jobs/{job_id}/social-drafts` returns the validated draft bundle;
+- `GET/POST /v1/jobs/{job_id}/approvals` reads or appends a human approval decision for one platform.
 
 `POST /v1/jobs` accepts `template_id` and an optional `character_id`. Both are
 resolved against server-owned catalogs; a client cannot submit an arbitrary
@@ -63,8 +65,13 @@ download host must be explicitly allowed by `AIVS_VIDEO_ALLOWED_DOWNLOAD_HOSTS`.
 - `GET /v1/jobs/{job_id}/artifacts/narration.wav`
 - `GET /v1/jobs/{job_id}/artifacts/social-drafts.json`
 
+Approval decisions are append-only and auditable. They do not publish content;
+an external platform connector must be a separate, explicitly invoked
+workflow and must check the latest decision first.
+
 ## Web dashboard
 
 打开 `GET /dashboard` 可使用内置控制台。它只调用同一 FastAPI 服务的
 `/v1` 接口，不引入 Node 构建链；部署到生产环境前仍需在反向代理或应用
-层增加认证与 CSRF/访问控制。
+层增加认证与 CSRF/访问控制。配置 `AIVS_API_KEY` 后，Dashboard 右上角可在
+当前浏览器会话中输入 API Key，Key 只保存在 `sessionStorage`。

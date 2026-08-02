@@ -20,6 +20,8 @@ button, select { cursor: pointer; }
 .topbar, .panel-heading, .topbar-actions, .form-row, .detail-meta, footer { display: flex; align-items: center; }
 .topbar { justify-content: space-between; gap: 24px; margin-bottom: 34px; }
 .topbar-actions { gap: 12px; }
+.api-key-control { display: flex; align-items: center; gap: 7px; }
+.api-key-control input { width: 180px; margin: 0; padding: 8px 10px; }
 .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .18em; }
 h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 8px; font-size: clamp(30px, 5vw, 54px); letter-spacing: -.055em; line-height: .98; }
@@ -50,6 +52,8 @@ textarea { resize: vertical; min-height: 100px; }
 .button { border: 1px solid var(--line); border-radius: 9px; padding: 10px 16px; color: var(--text); font-weight: 800; }
 .button.primary { width: 100%; border-color: #769d50; background: var(--accent); color: #10170c; }
 .button.secondary { background: var(--panel-2); }
+.button.tiny { padding: 6px 9px; font-size: 11px; }
+.button.danger { color: var(--danger); }
 .button:hover { filter: brightness(1.1); }
 .form-message { min-height: 18px; margin: 12px 0 0; color: var(--cyan); font-size: 12px; }
 .provider-list { display: grid; gap: 10px; }
@@ -83,7 +87,13 @@ td small { margin-top: 5px; color: var(--muted); font-size: 11px; }
 .event-type { color: var(--text); font-weight: 700; }
 .events time { white-space: nowrap; font-size: 10px; }
 .artifacts { display: grid; gap: 8px; }
-.artifact { display: flex; justify-content: space-between; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); text-decoration: none; }
+.approval-panel { margin-top: 26px; }
+.approvals { display: grid; gap: 8px; }
+.approval-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); }
+.approval-row strong, .approval-row small { display: block; }
+.approval-row small { margin-top: 4px; color: var(--muted); font-size: 11px; }
+.approval-actions { display: flex; gap: 6px; }
+.artifact { display: flex; width: 100%; justify-content: space-between; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text); font: inherit; text-align: left; text-decoration: none; }
 .artifact:hover { border-color: var(--cyan); }
 .artifact span { color: var(--cyan); font-size: 11px; }
 .error-text { color: var(--danger); }
@@ -91,4 +101,4 @@ td small { margin-top: 5px; color: var(--muted); font-size: 11px; }
 footer { justify-content: space-between; margin-top: 22px; color: var(--muted); font-size: 11px; }
 footer a { color: var(--cyan); }
 @media (max-width: 900px) { .metrics { grid-template-columns: repeat(3, 1fr); } .grid, .detail-columns { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .shell { width: min(100% - 24px, 1240px); padding-top: 24px; } .topbar { align-items: flex-start; flex-direction: column; } .metrics { grid-template-columns: repeat(2, 1fr); } .metric-card { min-height: 92px; } .form-row { display: block; } .panel { padding: 18px; } }
+@media (max-width: 560px) { .shell { width: min(100% - 24px, 1240px); padding-top: 24px; } .topbar { align-items: flex-start; flex-direction: column; } .topbar-actions { flex-wrap: wrap; } .api-key-control { width: 100%; } .api-key-control input { flex: 1; width: auto; } .metrics { grid-template-columns: repeat(2, 1fr); } .metric-card { min-height: 92px; } .form-row { display: block; } .panel { padding: 18px; } }

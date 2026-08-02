@@ -1,4 +1,4 @@
-const state = { jobs: [], selectedJobId: null };
+const state = { jobs: [], selectedJobId: null, apiKey: sessionStorage.getItem("aivs-api-key") || "" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -17,8 +17,14 @@ function statusLabel(status) {
   return { queued: "排队中", running: "运行中", succeeded: "已完成", failed: "失败" }[status] || status;
 }
 
+function requestHeaders(extra = {}) {
+  const headers = { "content-type": "application/json", ...extra };
+  if (state.apiKey) headers.Authorization = `Bearer ${state.apiKey}`;
+  return headers;
+}
+
 async function api(path, options = {}) {
-  const response = await fetch(path, { headers: { "content-type": "application/json", ...(options.headers || {}) }, ...options });
+  const response = await fetch(path, { ...options, headers: requestHeaders(options.headers || {}) });
   if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
   return response.status === 204 ? null : response.json();
 }
@@ -58,6 +64,46 @@ function renderJobs() {
   document.querySelectorAll("[data-open-job]").forEach((button) => button.addEventListener("click", () => openDetail(button.dataset.openJob)));
 }
 
+const approvalPlatforms = [
+  ["blog", "Blog"], ["wechat", "微信"], ["zhihu", "知乎"], ["bilibili", "B站"],
+  ["xiaohongshu", "小红书"], ["douyin", "抖音"], ["podcast", "播客"],
+];
+
+function renderApprovals(approvals) {
+  const latest = Object.fromEntries(approvals.map((item) => [item.platform, item]));
+  $("approvals").innerHTML = approvalPlatforms.map(([platform, label]) => {
+    const current = latest[platform];
+    const decision = current?.decision || "pending";
+    const decisionLabel = { approved: "已通过", rejected: "已驳回", pending: "待审核" }[decision];
+    return `<div class="approval-row"><div><strong>${label}</strong><small>${decisionLabel}${current?.reviewer ? ` · ${escapeHtml(current.reviewer)}` : ""}</small></div><div class="approval-actions"><button class="button tiny" data-approval-platform="${platform}" data-approval-decision="approved" type="button">通过</button><button class="button tiny danger" data-approval-platform="${platform}" data-approval-decision="rejected" type="button">驳回</button></div></div>`;
+  }).join("");
+  document.querySelectorAll("[data-approval-platform]").forEach((button) => button.addEventListener("click", () => decideApproval(button.dataset.approvalPlatform, button.dataset.approvalDecision)));
+}
+
+async function decideApproval(platform, decision) {
+  const note = decision === "rejected" ? (window.prompt("驳回原因（可选）") || "") : "";
+  try {
+    await api(`/v1/jobs/${state.selectedJobId}/approvals`, { method: "POST", body: JSON.stringify({ platform, decision, reviewer: "dashboard-operator", note }) });
+    await openDetail(state.selectedJobId);
+  } catch (error) {
+    $("form-message").textContent = `审批失败：${error.message}`;
+  }
+}
+
+async function downloadArtifact(jobId, name) {
+  try {
+    const response = await fetch(`/v1/jobs/${jobId}/artifacts/${name}`, { headers: requestHeaders() });
+    if (!response.ok) throw new Error((await response.text()) || `HTTP ${response.status}`);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(await response.blob());
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  } catch (error) {
+    $("form-message").textContent = `下载失败：${error.message}`;
+  }
+}
+
 async function openDetail(jobId) {
   state.selectedJobId = jobId;
   const [job, events] = await Promise.all([api(`/v1/jobs/${jobId}`), api(`/v1/jobs/${jobId}/events`)]);
@@ -66,7 +112,11 @@ async function openDetail(jobId) {
   $("detail-meta").innerHTML = `<span class="status ${escapeHtml(job.status)}">${statusLabel(job.status)}</span><span>尝试 ${job.attempt}/${job.max_attempts}</span><span>创建于 ${formatDate(job.created_at)}</span>${job.error_message ? `<span class="error-text">${escapeHtml(job.error_code)}: ${escapeHtml(job.error_message)}</span>` : ""}`;
   $("events").innerHTML = events.map((event) => `<li><span class="event-type">${escapeHtml(event.event_type)}</span><span>${escapeHtml(event.message)}</span><time>${formatDate(event.created_at)}</time></li>`).join("") || '<li class="muted">暂无事件</li>';
   const artifactNames = [["video.mp4", "视频"], ["story-plan.json", "Story Plan"], ["subtitles.srt", "字幕"], ["narration.wav", "配音"], ["social-drafts.json", "社交草稿"]];
-  $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<a class="artifact" href="/v1/jobs/${jobId}/artifacts/${name}" target="_blank" rel="noreferrer">${label}<span>下载 ↗</span></a>`).join("") : '<p class="muted">任务成功后可下载产物</p>';
+  $("artifacts").innerHTML = job.status === "succeeded" ? artifactNames.map(([name, label]) => `<button class="artifact" data-artifact-name="${name}" type="button">${label}<span>下载 ↗</span></button>`).join("") : '<p class="muted">任务成功后可下载产物</p>';
+  document.querySelectorAll("[data-artifact-name]").forEach((button) => button.addEventListener("click", () => downloadArtifact(jobId, button.dataset.artifactName)));
+  $("approvals").innerHTML = '<p class="muted">加载审批记录…</p>';
+  if (job.status === "succeeded") renderApprovals(await api(`/v1/jobs/${jobId}/approvals`));
+  else $("approvals").innerHTML = '<p class="muted">任务成功后可审核社交草稿</p>';
   $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -119,6 +169,13 @@ $("job-form").addEventListener("submit", async (event) => {
 });
 
 $("refresh").addEventListener("click", refresh);
+$("api-key").value = state.apiKey;
+$("save-api-key").addEventListener("click", () => {
+  state.apiKey = $("api-key").value.trim();
+  if (state.apiKey) sessionStorage.setItem("aivs-api-key", state.apiKey);
+  else sessionStorage.removeItem("aivs-api-key");
+  refresh();
+});
 $("status-filter").addEventListener("change", refresh);
 $("close-detail").addEventListener("click", () => { state.selectedJobId = null; $("detail").classList.add("hidden"); });
 refresh();

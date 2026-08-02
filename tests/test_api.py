@@ -1,6 +1,11 @@
+import asyncio
+
 from fastapi.testclient import TestClient
 
 from apps.api.main import create_app
+from packages.contracts.models import CreateJobRequest
+from packages.planner import StoryPlanner
+from packages.publishing import write_social_drafts
 from packages.storage import FileJobStore
 
 
@@ -71,3 +76,41 @@ def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
         json={"topic": "Synthetic API job", "provider": "minimax"},
     )
     assert rejected.status_code == 422
+
+
+def test_api_exposes_reviewable_social_draft_approvals(tmp_path) -> None:
+    store = FileJobStore(tmp_path / "state")
+    client = TestClient(create_app(store=store))
+    record = store.create(
+        CreateJobRequest(topic="Approval test", duration_seconds=15, use_ai=False)
+    )
+    claimed = store.claim_next()
+    assert claimed is not None
+    claimed.status = "succeeded"
+    write_social_drafts(
+        asyncio.run(
+            StoryPlanner().plan(topic="Approval test", duration_seconds=15, use_ai=False)
+        ).plan,
+        store.artifacts_dir / str(record.job_id) / "social-drafts.json",
+    )
+    store.finish(claimed)
+
+    assert client.get(f"/v1/jobs/{record.job_id}/approvals").json() == []
+    decision = client.post(
+        f"/v1/jobs/{record.job_id}/approvals",
+        json={
+            "platform": "wechat",
+            "decision": "approved",
+            "reviewer": "test-editor",
+            "note": "Looks good.",
+        },
+    )
+    assert decision.status_code == 201
+    assert decision.json()["decision"] == "approved"
+    assert client.get(f"/v1/jobs/{record.job_id}/approvals").json()[0]["platform"] == "wechat"
+
+    invalid_platform = client.post(
+        f"/v1/jobs/{record.job_id}/approvals",
+        json={"platform": "not-a-platform", "decision": "approved"},
+    )
+    assert invalid_platform.status_code == 422

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 — 2026-08-02
+
+- add append-only human approval records for social drafts;
+- expose draft review and approval API endpoints without adding external posting side effects;
+- add Dashboard approval controls and session-only API-key entry for protected `/v1` deployments.
+
 ## 0.5.0 — 2026-08-02
 
 - add optional constant-time API-key authentication for `/v1` routes;
