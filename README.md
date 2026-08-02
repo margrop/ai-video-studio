@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.14.0：
+当前版本是 0.15.0：
 
 ```text
 Markdown / Topic
@@ -33,7 +33,7 @@ Markdown / Topic
 - `/v1/publishers`、发布审计和 MCP 发布预览可让 Agent 自动化保持可检查；
 - `/v1/usage` 记录每个终态任务的 Provider 与处理时长，重试不会重复计费；
 - `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
-- `Character Library`、`Asset Library` 和可审阅的模板目录可被任务复用；
+- `Character Library`、`Asset Library`、版本化 Template 和 Brand Preset 目录可被任务复用；
 - Asset Library 支持服务端路径受控的二进制上传/下载、大小限制和 SHA-256 完整性记录；
 - 成功任务会生成各平台社交草稿，MCP 可让本地 Agent 一句话调用整条流水线；
 - 60 秒计划默认拆成 8 个约 7.5 秒 Shot；视频 Provider 逐 Shot 生成后再统一合成；
@@ -43,6 +43,7 @@ Markdown / Topic
 - Kling、Veo、Runway、OpenAI 等 Provider 有隔离目录、能力声明和 transport-compatible 扩展骨架；启用前仍需按供应商验证 API 合同。
 - Provider Registry 支持按服务端声明的 capability 选择模型，任务请求不能覆盖 Provider 或模型配置；
 - 任务记录暴露规划、配音、分镜、合成和社交草稿阶段的实时进度；视频 Provider 每完成一个 Shot 都会写入结构化进度事件；
+- 模板有显式版本和默认 Brand Preset；Brand Preset 可统一提示词、片头/片尾/Logo 素材引用，任务只能选择服务端已注册的预设；
 
 没有配置 API Key 时，规划和渲染仍然可以离线运行。这个降级路径用于测试和演示，不代表视频模型或 TTS 已经接通。
 
@@ -121,7 +122,7 @@ curl -X POST http://127.0.0.1:8000/v1/jobs \
 ```
 
 运维接口：`GET /v1/jobs`、`GET /v1/stats`、`GET /v1/usage`、
-`GET /v1/providers` 和 `GET /v1/jobs/{job_id}/events`。任务响应中的
+`GET /v1/providers`、`GET /v1/brand-presets` 和 `GET /v1/jobs/{job_id}/events`。任务响应中的
 `progress` 包含 `stage`、`percent`、`completed_shots`、`total_shots` 和
 `current_shot`，可用于轮询或 Dashboard 展示长任务进度。
 
@@ -138,7 +139,7 @@ packages/
 ├── llm/       # provider-neutral LLM 接口
 ├── planner/   # AI/确定性 Story Planner
 ├── storyboard/# Prompt Builder
-├── library/   # Character、Asset、Template catalog
+├── library/   # Character、Asset、Template、Brand Preset catalog
 ├── providers/ # VideoProvider 与 Registry
 ├── subtitle/  # SRT
 ├── tts/       # TTS 接口与实现
