@@ -21,6 +21,9 @@ from .base import VideoProviderError
 class HTTPVideoProvider:
     """Submit, poll and download a server-configured asynchronous video job."""
 
+    provider_kind = "video"
+    capabilities = ("async-generation", "remote-download", "shot-generation")
+
     def __init__(
         self,
         *,
