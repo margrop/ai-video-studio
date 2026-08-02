@@ -22,6 +22,8 @@ from packages.contracts.models import (
 from packages.runtime import AppRuntime, build_runtime
 from packages.storage import FileJobStore
 
+WEB_ROOT = Path(__file__).parents[1] / "web"
+
 
 def create_app(
     *,
@@ -31,6 +33,22 @@ def create_app(
     job_store = store or FileJobStore.from_env(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime()
     app = FastAPI(title="AI Video Studio API", version="0.2.0")
+
+    @app.get("/", include_in_schema=False)
+    @app.get("/dashboard", include_in_schema=False)
+    async def dashboard() -> FileResponse:
+        return FileResponse(WEB_ROOT / "index.html", media_type="text/html")
+
+    @app.get("/dashboard/{asset_name}", include_in_schema=False)
+    async def dashboard_asset(asset_name: str) -> FileResponse:
+        assets = {
+            "app.js": ("application/javascript", WEB_ROOT / "app.js"),
+            "styles.css": ("text/css", WEB_ROOT / "styles.css"),
+        }
+        if asset_name not in assets:
+            raise HTTPException(status_code=404, detail="dashboard_asset_not_found")
+        media_type, path = assets[asset_name]
+        return FileResponse(path, media_type=media_type)
 
     @app.get("/health", response_model=HealthResponse)
     async def health() -> HealthResponse:

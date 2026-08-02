@@ -22,6 +22,7 @@ Markdown / Topic
 - FastAPI 接受任务，文件队列 worker 处理任务；
 - 任务具有幂等键、服务端重试预算、worker lease 和崩溃恢复；
 - 可以查看任务列表、状态统计、事件流和运行时 Provider 能力；
+- `/dashboard` 提供零构建依赖的任务控制台，可创建任务、查看事件和下载产物；
 - MiniMax H3 通过 OpenAI-compatible LLM Provider 接入 Story Planner；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
@@ -109,7 +110,7 @@ apps/
 ├── api/       # FastAPI 任务 API
 ├── worker/    # 文件队列 worker；Phase 2 可替换 Redis/Celery
 ├── cli/       # 一句话 CLI
-└── web/       # Web 管理后台预留
+└── web/       # 零构建依赖的 Web 管理后台
 packages/
 ├── contracts/ # Story Plan、Job、API 合同
 ├── llm/       # provider-neutral LLM 接口

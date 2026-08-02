@@ -7,6 +7,12 @@ from packages.storage import FileJobStore
 def test_api_queues_job_without_accepting_provider_controls(tmp_path) -> None:
     client = TestClient(create_app(store=FileJobStore(tmp_path / "state")))
 
+    assert client.get("/").status_code == 200
+    assert "内容流水线控制台" in client.get("/dashboard").text
+    assert client.get("/dashboard/app.js").status_code == 200
+    assert client.get("/dashboard/styles.css").status_code == 200
+    assert client.get("/dashboard/secret.txt").status_code == 404
+
     response = client.post(
         "/v1/jobs",
         json={"topic": "Synthetic API job", "duration_seconds": 15, "use_ai": False},

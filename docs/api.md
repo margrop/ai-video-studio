@@ -48,3 +48,9 @@ worker leases are recovered after a process crash.
 - `GET /v1/jobs/{job_id}/artifacts/story-plan.json`
 - `GET /v1/jobs/{job_id}/artifacts/subtitles.srt`
 - `GET /v1/jobs/{job_id}/artifacts/narration.wav`
+
+## Web dashboard
+
+打开 `GET /dashboard` 可使用内置控制台。它只调用同一 FastAPI 服务的
+`/v1` 接口，不引入 Node 构建链；部署到生产环境前仍需在反向代理或应用
+层增加认证与 CSRF/访问控制。
