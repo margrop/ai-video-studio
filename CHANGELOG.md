@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-08-02
+
+- add optional constant-time API-key authentication for `/v1` routes;
+- add process-local and Redis-shared fixed-window rate limiting with standard response headers;
+- keep health checks and anonymous local development available when no API key is configured.
+
 ## 0.4.0 — 2026-08-02
 
 - add a pluggable job-store contract and Redis backend for multi-process workers;

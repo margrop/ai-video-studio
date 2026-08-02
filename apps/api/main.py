@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import FastAPI, Header, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Header, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse, JSONResponse
 
 from packages.contracts.models import (
     AssetRecord,
@@ -27,6 +27,7 @@ from packages.contracts.models import (
 )
 from packages.library import CatalogNotFound
 from packages.runtime import AppRuntime, build_runtime
+from packages.security import APIAuthenticator, build_rate_limiter, security_headers
 from packages.storage import JobStore, build_job_store
 
 WEB_ROOT = Path(__file__).parents[1] / "web"
@@ -39,7 +40,35 @@ def create_app(
 ) -> FastAPI:
     job_store = store or build_job_store(Path(os.getenv("AIVS_STORAGE_ROOT", ".aivs")))
     app_runtime = runtime or build_runtime(job_store.root)
-    app = FastAPI(title="AI Video Studio API", version="0.4.0")
+    app = FastAPI(title="AI Video Studio API", version="0.5.0")
+    authenticator = APIAuthenticator.from_env()
+    rate_limiter = build_rate_limiter(job_store)
+
+    @app.middleware("http")
+    async def protect_api(request: Request, call_next):
+        if not request.url.path.startswith("/v1"):
+            return await call_next(request)
+        if not authenticator.allows(
+            authorization=request.headers.get("Authorization"),
+            api_key_header=request.headers.get("X-AIVS-API-Key"),
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "invalid_api_key"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        client_host = request.client.host if request.client is not None else "unknown"
+        decision = rate_limiter.check(client_host)
+        headers = security_headers(decision)
+        if not decision.allowed:
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"detail": "rate_limit_exceeded"},
+                headers=headers,
+            )
+        response = await call_next(request)
+        response.headers.update(headers)
+        return response
 
     @app.get("/", include_in_schema=False)
     @app.get("/dashboard", include_in_schema=False)
