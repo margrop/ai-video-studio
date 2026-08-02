@@ -8,9 +8,9 @@ from packages.ffmpeg import FFmpegError, FFmpegRenderer
 
 
 def test_renderer_uses_explicit_ffmpeg_environment_path(monkeypatch) -> None:
-    monkeypatch.setenv("AIVS_FFMPEG_BINARY", "/opt/homebrew/bin/ffmpeg")
+    monkeypatch.setenv("AIVS_FFMPEG_BINARY", "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
 
-    assert FFmpegRenderer().ffmpeg_binary == "/opt/homebrew/bin/ffmpeg"
+    assert FFmpegRenderer().ffmpeg_binary == "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
 
 
 def test_renderer_reports_missing_drawtext_filter(monkeypatch) -> None:
@@ -27,5 +27,5 @@ def test_renderer_reports_missing_drawtext_filter(monkeypatch) -> None:
 
     monkeypatch.setattr("packages.ffmpeg.renderer.subprocess.run", fake_run)
 
-    with pytest.raises(FFmpegError, match="drawtext.*libfreetype"):
+    with pytest.raises(FFmpegError, match="drawtext.*ffmpeg-full"):
         renderer._require_filter("drawtext")
