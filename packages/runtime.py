@@ -24,6 +24,7 @@ from providers.minimax import MiniMaxLLMProvider, MiniMaxTTSProvider, MiniMaxVid
 from providers.openai import OpenAIVideoProvider
 from providers.runway import RunwayVideoProvider
 from providers.veo import GoogleVeoVideoProvider
+from providers.volcengine import VolcengineAgentPlanVideoProvider
 
 
 class _OfflinePlannerProvider:
@@ -40,6 +41,7 @@ _VENDOR_VIDEO_FACTORIES = {
     "google-veo": GoogleVeoVideoProvider,
     "runway": RunwayVideoProvider,
     "openai-video": OpenAIVideoProvider,
+    "volcengine-agentplan-video": VolcengineAgentPlanVideoProvider,
 }
 
 
