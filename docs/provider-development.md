@@ -28,6 +28,24 @@ environment variables but do not claim that their vendor API shapes have been
 verified. Enable one only after its endpoint, credential, quota and response
 contract has been tested.
 
+## Volcengine Ark Agent Plan
+
+`VolcengineAgentPlanVideoProvider` is the verified native adapter under
+`providers/volcengine`. It uses the dedicated Agent Plan base URL
+`https://ark.cn-beijing.volces.com/api/plan/v3`, submits
+`POST /contents/generations/tasks`, polls
+`GET /contents/generations/tasks/{id}`, reads `content.video_url`, validates
+the signed Ark/TOS download host and downloads the MP4 without sending the API
+key to the CDN.
+
+Agent Plan requires a dedicated Agent Plan API key and a Base URL containing
+`/api/plan/v3`; a normal Ark or Coding Plan key is not interchangeable. The
+adapter maps the provider-owned prompt and server-owned reference image URLs
+to Seedance `content[]`, and exposes resolution, ratio, duration, audio and
+watermark as server configuration. It defaults to `doubao-seedance-2.0`,
+`720p`, `9:16`, silent clips and no watermark so AIVS can attach its own
+narration during composition.
+
 ## MiniMax H3 text and video boundaries
 
 `MiniMaxLLMProvider` is the OpenAI-compatible text planner boundary. It uses
