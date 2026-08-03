@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.19.0 — 2026-08-03
+
+- add a native Volcengine Ark Agent Plan Seedance video Provider;
+- use the dedicated `/api/plan/v3/contents/generations/tasks` asynchronous API;
+- support Seedance content prompts, reference image URLs, resolution, ratio,
+  duration, generated audio and watermark configuration;
+- validate signed Ark/TOS download hosts and avoid forwarding the Agent Plan key
+  to the returned video URL;
+- add synthetic submit/poll/download, reference-input and terminal-failure tests.
+
 ## 0.18.3 — 2026-08-02
 
 - auto-detect macOS PingFang and common Linux CJK fonts for offline rendering;
