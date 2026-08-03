@@ -7,6 +7,7 @@
 - one-sentence CLI
 - NewAPI/OpenAI-compatible text planner adapter
 - Native MiniMax H3 asynchronous video Provider
+- Native Volcengine Ark Agent Plan Seedance asynchronous video Provider
 - TTS interface with offline fallback
 - deterministic SRT and FFmpeg vertical MP4
 - versioned Story Plan contract
@@ -34,6 +35,8 @@
 - RSS/Atom → video → social-draft workflow
 - generic provider registry, safe async video transport and shot-by-shot composition
 - native MiniMax H3 video request/poll/download adapter is included;
+  native Volcengine Ark Agent Plan Seedance request/poll/download adapter is
+  included;
   transport-compatible Kling/Veo/Runway/OpenAI scaffolds remain extension work
 - provider capability discovery and usage/cost records are included
 - server-owned stage and per-shot progress metadata is persisted consistently
