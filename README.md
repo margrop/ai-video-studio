@@ -4,7 +4,7 @@
 
 AI Video Studio（AIVS）是一个 provider-neutral 的 AI 内容流水线。它的核心不是把某个视频模型封装成脚本，而是把内容规划、分镜、提示词、配音、字幕、渲染和后续发布拆成可以复用、测试和替换的模块。
 
-当前版本是 0.18.3：
+当前版本是 0.19.0：
 
 ```text
 Markdown / Topic
@@ -38,6 +38,7 @@ Markdown / Topic
 - 成功任务会生成各平台社交草稿，MCP 可让本地 Agent 一句话调用整条流水线；
 - 60 秒计划默认拆成 8 个约 7.5 秒 Shot；视频 Provider 逐 Shot 生成后再统一合成；
 - Story Planner 可以通过你的 NewAPI 使用任意配置好的文本模型；MiniMax H3 作为原生异步视频 Provider 接入；
+- 火山方舟 Agent Plan 的 Doubao Seedance 2.0 作为原生异步视频 Provider 接入；
 - TTS 是独立接口，默认使用离线静音 WAV，配置 TTS 后可以切换到服务端语音接口；
 - FFmpeg 负责确定性合成，不依赖某一个视频模型；
 - Kling、Veo、Runway、OpenAI 等 Provider 有隔离目录、能力声明和 transport-compatible 扩展骨架；启用前仍需按供应商验证 API 合同。
@@ -117,6 +118,39 @@ H3 视频请求必须使用 MiniMax Developer API Key，并且每个 Shot 时长
 
 如果文本上游不可用，Story Planner 会返回确定性降级计划；如果 H3 视频上游不可用，任务会保留 Shot Manifest 中的失败状态，不会伪造“AI 已成功生成”。
 
+## 使用火山方舟 Agent Plan Seedance
+
+AIVS 对火山方舟使用原生内容生成任务接口，不把它误当成普通
+OpenAI-compatible 视频接口。Agent Plan 必须同时使用专属 API Key 和带
+`/api/plan/v3` 的 Base URL；当前官方示例模型为
+`doubao-seedance-2.0`。请求按每个 Shot 创建异步任务，查询成功后下载
+`content.video_url`，再由本地 FFmpeg 统一拼接并混入 AIVS 的配音。
+
+```bash
+export AIVS_VIDEO_PROVIDER="volcengine-agentplan-video"
+export AIVS_VOLCENGINE_VIDEO_BASE_URL="https://ark.cn-beijing.volces.com/api/plan/v3"
+export AIVS_VOLCENGINE_VIDEO_API_KEY="your-agent-plan-api-key"
+export AIVS_VOLCENGINE_VIDEO_MODEL="doubao-seedance-2.0"
+export AIVS_VOLCENGINE_VIDEO_RESOLUTION="720p"
+export AIVS_VOLCENGINE_VIDEO_RATIO="9:16"
+export AIVS_VOLCENGINE_VIDEO_GENERATE_AUDIO="false"
+export AIVS_VOLCENGINE_VIDEO_WATERMARK="false"
+export AIVS_VOLCENGINE_VIDEO_POLL_INTERVAL_SECONDS="10"
+export AIVS_VOLCENGINE_VIDEO_MAX_WAIT_SECONDS="900"
+export AIVS_VOLCENGINE_VIDEO_ALLOWED_DOWNLOAD_HOSTS="ark-content-generation-cn-beijing.tos-cn-beijing.volces.com,ark-project.tos-cn-beijing.volces.com"
+aivs generate "介绍火山方舟 Agent Plan" --output artifacts/agent-plan.mp4
+```
+
+官方文档：[接入视觉模型](https://docs.volcengine.com/docs/82379/2375486)、
+[创建视频生成任务](https://docs.volcengine.com/docs/82379/1520757) 和
+[查询视频生成任务](https://docs.volcengine.com/docs/82379/1521309)。
+
+Seedance 2.0 的视频时长为 4–15 秒；AIVS 会逐 Shot 调用，不会把一分钟
+请求直接发送成一个超长模型任务。默认关闭模型生成音频，因为最终音轨
+由 AIVS 的 TTS/FFmpeg 阶段负责。使用参考图时，需通过
+`AIVS_ASSET_PUBLIC_URL_TEMPLATE` 提供火山方舟可访问的 URL，或在服务端
+配置 Ark `asset://` 素材 ID。
+
 ## API 与 Worker
 
 终端一：
@@ -179,6 +213,7 @@ packages/
 └── workflow/  # 内容流水线编排
 providers/
 ├── minimax/   # MiniMax H3 / TTS 适配器
+├── volcengine/# 火山方舟 Agent Plan Seedance 适配器
 ├── openai/    # OpenAI-compatible 适配器
 ├── kling/     # 扩展位置
 ├── veo/       # 扩展位置
